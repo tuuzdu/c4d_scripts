@@ -41,7 +41,7 @@ def main():
     while time <= maxTime:
         shot_time = c4d.BaseTime(time)
         doc.SetTime(shot_time)
-        c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION)
+        c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)
         counter = 0
         for obj in objects:
             #Get color
