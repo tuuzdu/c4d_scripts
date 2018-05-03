@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8  -*-
+
 import c4d
 from c4d import gui, documents
 import os
@@ -5,12 +8,12 @@ import errno
 
 
 PERIOD = 0.5
-MAX_INDEX = 40
+OBJS_NUMBER = 40
 BASE_NAME = "Sphere "
 
 def getNames ():
     names = []
-    for indexName in range(MAX_INDEX):
+    for indexName in range(OBJS_NUMBER):
         name = BASE_NAME + "{0:d}".format(indexName)
         names.append(name)
     return names
@@ -34,9 +37,10 @@ def main():
     objects = getObjects(objNames)
 
     time = 0
-    pos = []
-    for i in range(MAX_INDEX):
-        pos.append([])
+    points_array = []
+    for i in range(OBJS_NUMBER):
+        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\nlocal points  =  {{\n".format(PERIOD, OBJS_NUMBER)
+        points_array.append([s])
 
     while time <= maxTime:
         shot_time = c4d.BaseTime(time)
@@ -54,11 +58,16 @@ def main():
             vecColor = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR)
             #Get position
             vecPosition = obj.GetAbsPos()
-            s = "t = {0:.2f} \tx = {1:.2f} \ty = {2:.2f} \tz = {3:.2f} \tr = {4:.2f} \tg = {5:.2f} \tb = {6:.2f} \n".format(time, vecPosition.x, vecPosition.y, vecPosition.z, vecColor.x, vecColor.y, vecColor.z)
+            s = "\t{{{0:.1f},\t{1:.1f},\t{2:.1f},\t{3:.2f},\t{4:.2f},\t{5:.2f}}},\n".format(vecPosition.x, vecPosition.y, vecPosition.z, vecColor.x, vecColor.y, vecColor.z)
             #print s
-            pos[counter].append(s)
+            points_array[counter].append(s)
             counter += 1
         time += PERIOD
+
+    for i in range(OBJS_NUMBER):
+        s = points_array[i].pop()
+        s = s[:-2] + "\n}"
+        points_array[i].append(s)
 
     folderName = "./coordinates/"
     if not os.path.exists(os.path.dirname(folderName)):
@@ -68,16 +77,14 @@ def main():
             if exc.errno != errno.EEXIST:
                 raise
 
-    for i in range(MAX_INDEX):
-        fileName = folderName + objNames[i] + ".txt"
+    for i in range(OBJS_NUMBER):
+        fileName = folderName + objNames[i] + ".lua"
         with open (fileName, "w") as f:
-            for item in pos[i]:
+            for item in points_array[i]:
                 f.write("%s" % item)
 
     gui.MessageDialog("Files generated!")
             
-
-
 
 if __name__=='__main__':
     main()
