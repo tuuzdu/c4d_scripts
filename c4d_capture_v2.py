@@ -10,7 +10,9 @@ import binascii
 
 PERIOD = 0.5
 OBJS_NUMBER = 40
-BASE_NAME = "Sphere "
+BASE_NAME = "drone_"
+STRUCT_FORMAT = "3iH3B"
+
 
 def getNames ():
     names = []
@@ -40,7 +42,7 @@ def main():
     time = 0
     points_array = []
     for i in range(OBJS_NUMBER):
-        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\nlocal points  =  \"".format(PERIOD, OBJS_NUMBER)
+        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\n-- Struct format \"{2:s}\"\nlocal points  =  \"".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
         points_array.append([s])
 
     while time <= maxTime:
@@ -59,7 +61,7 @@ def main():
             vecColor = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR)
             #Get position
             vecPosition = obj.GetAbsPos()
-            s = struct.pack("3ih3B",    int(time * 1000), 
+            s = struct.pack(STRUCT_FORMAT,    int(time * 1000), 
                                         int(vecPosition.x * 100), 
                                         int(vecPosition.y * 100), 
                                         int(vecPosition.z * 100), 
@@ -86,7 +88,7 @@ def main():
             for item in points_array[i]:
                 f.write(item)
             f.write("\"\n")
-            s = "--for n = 0, {:d} do\n\t--print (string.unpack('iiihBBB', points, 1 + n * string.packsize('iiihBBB')))\n--end".format(int((time - PERIOD)/PERIOD))
+            s = "--for n = 0, {:d} do\n\t--print (string.unpack('iiiHBBB', points, 1 + n * string.packsize('iiiHBBB')))\n--end".format(int((time - PERIOD)/PERIOD))
             f.write(s)
 
     gui.MessageDialog("Files generated!")
