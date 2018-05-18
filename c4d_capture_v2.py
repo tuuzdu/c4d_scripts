@@ -2,6 +2,7 @@
 # -*- coding: utf-8  -*-
 
 import c4d
+from c4d import Ttexture
 from c4d import gui, documents
 import os
 import errno
@@ -9,7 +10,7 @@ import struct
 import binascii
 
 PERIOD = 0.5
-OBJS_NUMBER = 40
+OBJS_NUMBER = 10
 BASE_NAME = "drone_"
 STRUCT_FORMAT = "3iH3B"
 
@@ -42,7 +43,7 @@ def main():
     time = 0
     points_array = []
     for i in range(OBJS_NUMBER):
-        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\n-- Struct format \"{2:s}\"\nlocal points  =  \"".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
+        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\n-- Struct format \"{2:s}\". [time]=ms, [x][z][y]=cm, [r][g][b]=0-255\nlocal points  =  \"".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
         points_array.append([s])
 
     while time <= maxTime:
@@ -53,18 +54,18 @@ def main():
         for obj in objects:
             #Get color
             try:
-                objMaterial = obj.GetFirstTag().GetMaterial()
+                objMaterial = obj.GetTag(Ttexture).GetMaterial()
             except AttributeError:
                 # print ("First object tag must be Material")
-                gui.MessageDialog("First object's ({0:s}) tag must be \"Material\"".format(obj))
+                gui.MessageDialog("Didn't find object's ({0:s}) tag \"Material\"".format(obj))
                 return
             vecColor = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR)
             #Get position
             vecPosition = obj.GetAbsPos()
             s = struct.pack(STRUCT_FORMAT,    int(time * 1000), 
                                         int(vecPosition.x * 100), 
-                                        int(vecPosition.y * 100), 
                                         int(vecPosition.z * 100), 
+                                        int(vecPosition.y * 100), 
                                         int(vecColor.x * 255), 
                                         int(vecColor.y * 255), 
                                         int(vecColor.z * 255))
@@ -88,7 +89,7 @@ def main():
             for item in points_array[i]:
                 f.write(item)
             f.write("\"\n")
-            s = "--for n = 0, {:d} do\n\t--print (string.unpack('iiiHBBB', points, 1 + n * string.packsize('iiiHBBB')))\n--end".format(int((time - PERIOD)/PERIOD))
+            s = "--for n = 0, {:d} do\n\t--t, x, y, z, r, g, b, _ = string.unpack('iiiHBBB', points, 1 + n * string.packsize('iiiHBBB'))\n\t--print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)\n--end".format(int((time - PERIOD)/PERIOD))
             f.write(s)
 
     gui.MessageDialog("Files generated!")
