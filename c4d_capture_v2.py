@@ -12,7 +12,7 @@ import binascii
 PERIOD = 0.5
 OBJS_NUMBER = 10
 BASE_NAME = "drone_"
-STRUCT_FORMAT = "3iH3B"
+STRUCT_FORMAT = "iiiHBBB"
 
 
 def getNames ():
@@ -43,7 +43,11 @@ def main():
     time = 0
     points_array = []
     for i in range(OBJS_NUMBER):
-        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\n-- Struct format \"{2:s}\". [time]=ms, [x][y][z]=cm, [r][g][b]=0-255\nlocal points  =  \"".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
+        s = """ -- Time step is {0:.2f} s\n
+                -- [time]=ms, [x][y][z]=cm, [r][g][b]=0-255\n
+                local points_count = {1:d}\n
+                local str_format = \"{2:s}\"\n
+                local points  =  \"""".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
         points_array.append([s])
 
     while time <= maxTime:
@@ -62,13 +66,13 @@ def main():
             vecColor = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR)
             #Get position
             vecPosition = obj.GetAbsPos()
-            s = struct.pack(STRUCT_FORMAT,    int(time * 1000), 
-                                        int(vecPosition.x), 
-                                        int(vecPosition.z), 
-                                        int(vecPosition.y), 
-                                        int(vecColor.x * 255), 
-                                        int(vecColor.y * 255), 
-                                        int(vecColor.z * 255))
+            s = struct.pack(STRUCT_FORMAT,  int(time * 1000), 
+                                            int(vecPosition.x), 
+                                            int(vecPosition.z), 
+                                            int(vecPosition.y), 
+                                            int(vecColor.x * 255), 
+                                            int(vecColor.y * 255), 
+                                            int(vecColor.z * 255))
             # print s
             s_xhex = binascii.hexlify(s)
             points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
@@ -88,8 +92,12 @@ def main():
         with open (fileName, "w") as f:
             for item in points_array[i]:
                 f.write(item)
-            f.write("\"\n")
-            s = "--for n = 0, {:d} do\n\t--t, x, y, z, r, g, b, _ = string.unpack('iiiHBBB', points, 1 + n * string.packsize('iiiHBBB'))\n\t--print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)\n--end".format(int((time - PERIOD)/PERIOD))
+            # f.write("\"\n")
+            s = """ \"\n
+                    --for n = 0, {:d} do\n\t
+                        --t, x, y, z, r, g, b, _ = string.unpack('iiiHBBB', points, 1 + n * string.packsize('iiiHBBB'))\n\t
+                        --print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)\n
+                    --end""".format(int((time - PERIOD)/PERIOD))
             f.write(s)
 
     gui.MessageDialog("Files generated!")
