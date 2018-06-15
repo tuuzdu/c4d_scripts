@@ -43,7 +43,7 @@ def main():
     time = 0
     points_array = []
     for i in range(OBJS_NUMBER):
-        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\n-- Struct format \"{2:s}\". [time]=ms, [x][z][y]=cm, [r][g][b]=0-255\nlocal points  =  \"".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
+        s = "-- Time step is {0:.2f} s\n-- Number of objects is {1:d}\n-- Struct format \"{2:s}\". [time]=ms, [x][y][z]=cm, [r][g][b]=0-255\nlocal points  =  \"".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
         points_array.append([s])
 
     while time <= maxTime:
@@ -63,9 +63,9 @@ def main():
             #Get position
             vecPosition = obj.GetAbsPos()
             s = struct.pack(STRUCT_FORMAT,    int(time * 1000), 
-                                        int(vecPosition.x * 100), 
-                                        int(vecPosition.z * 100), 
-                                        int(vecPosition.y * 100), 
+                                        int(vecPosition.x), 
+                                        int(vecPosition.z), 
+                                        int(vecPosition.y), 
                                         int(vecColor.x * 255), 
                                         int(vecColor.y * 255), 
                                         int(vecColor.z * 255))
