@@ -13,7 +13,7 @@ PERIOD = 1
 OBJS_NUMBER = 10
 BASE_NAME = "drone_"
 STRUCT_FORMAT = "iiiHBBB"
-
+folderName = "./points/"
 
 def getNames ():
     names = []
@@ -78,7 +78,6 @@ local points  =  \"""".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
             counter += 1
         time += PERIOD
 
-    folderName = "./points/"
     if not os.path.exists(os.path.dirname(folderName)):
         try:
             os.makedirs(os.path.dirname(folderName))
@@ -91,7 +90,6 @@ local points  =  \"""".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
         with open (fileName, "w") as f:
             for item in points_array[i]:
                 f.write(item)
-            # f.write("\"\n")
             s = """\"
 local points_count = {0:d}
 local str_format = \"{1:s}\"
@@ -100,9 +98,26 @@ local str_format = \"{1:s}\"
     --print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)
 --end """.format(int((time - PERIOD)/PERIOD), STRUCT_FORMAT)
             f.write(s)
-
     gui.MessageDialog("Files generated!")
-            
+
+def createLuaScripts ():
+    objNames = getNames()
+    luaFolderName = "./scripts/"
+
+    if not os.path.exists(os.path.dirname(luaFolderName)):
+        try:
+            os.makedirs(os.path.dirname(luaFolderName))
+        except OSError as exc: # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
+    for i in range(OBJS_NUMBER):
+        pointsFileName = folderName + objNames[i] + ".lua"
+        with open (pointsFileName, "r") as f_points, open ("./template/c4d_animation.lua", "r") as f_temp, open (luaFolderName + objNames[i] + ".lua", "w") as f:
+            f.write(f_points.read())
+            f.write(f_temp.read())
+
 
 if __name__=="__main__":
     main()
+    createLuaScripts()
