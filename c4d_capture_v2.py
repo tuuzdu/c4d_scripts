@@ -9,7 +9,7 @@ import errno
 import struct
 import binascii
 
-PERIOD = 0.5
+PERIOD = 1
 OBJS_NUMBER = 10
 BASE_NAME = "drone_"
 STRUCT_FORMAT = "iiiHBBB"
@@ -43,11 +43,10 @@ def main():
     time = 0
     points_array = []
     for i in range(OBJS_NUMBER):
-        s = """ -- Time step is {0:.2f} s\n
-                -- [time]=ms, [x][y][z]=cm, [r][g][b]=0-255\n
-                local points_count = {1:d}\n
-                local str_format = \"{2:s}\"\n
-                local points  =  \"""".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
+        s = """ 
+-- Time step is {0:.2f} s
+-- [time]=ms, [x][y][z]=cm, [r][g][b]=0-255
+local points  =  \"""".format(PERIOD, OBJS_NUMBER, STRUCT_FORMAT)
         points_array.append([s])
 
     while time <= maxTime:
@@ -93,11 +92,13 @@ def main():
             for item in points_array[i]:
                 f.write(item)
             # f.write("\"\n")
-            s = """ \"\n
-                    --for n = 0, {:d} do\n\t
-                        --t, x, y, z, r, g, b, _ = string.unpack('iiiHBBB', points, 1 + n * string.packsize('iiiHBBB'))\n\t
-                        --print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)\n
-                    --end""".format(int((time - PERIOD)/PERIOD))
+            s = """\"
+local points_count = {0:d}
+local str_format = \"{1:s}\"
+--for n = 0, {0:d} do
+    --t, x, y, z, r, g, b, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
+    --print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)
+--end """.format(int((time - PERIOD)/PERIOD), STRUCT_FORMAT)
             f.write(s)
 
     gui.MessageDialog("Files generated!")
