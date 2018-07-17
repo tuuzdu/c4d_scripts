@@ -1,9 +1,12 @@
 
+
 local Animation = {}
 
 function Animation.new(points_str, colors_str)
 
-	local tblUnpack = table.unpack   
+    --setGpsOrigin(60.004094, 30.362746, 0) -- устанавливаем ноль в GPS, координаты улицы Шателена, 3
+
+	local tblUnpack = table.unpack
 	local strUnpack = string.unpack
 
 	local state = {stop = 0, idle = 1, flight = 2, landed = 3}
@@ -16,8 +19,8 @@ function Animation.new(points_str, colors_str)
 		Color.colors_str_size = string.packsize(str_format)
 		Color.colors_str = points_str	-- TODO: colors string
 		Color.first_led = 0
-		Color.last_led = 28
-		Color.leds = Ledbar.new(29)
+		Color.last_led = 3
+		Color.leds = Ledbar.new(4)
 	
 	-- кастомное преобразование hsv
 	-- линейная интерполяция (некоторые зарегистрированные значения сознательно опущены)
@@ -188,6 +191,11 @@ function Animation.new(points_str, colors_str)
 		self.state = state.idle
 	end
 
+	function obj:infoLed(r, g, b)
+		Color.leds:set(0, r, g, b)
+		Color.leds:set(3, r, g, b)
+	end
+
 	function obj:start()
 		self.state = state.idle
 		self:eventHandler(Ev.SYNC_START)
@@ -202,8 +210,31 @@ function callback(event)
 end
 
 anim = Animation.new(points, _)
-anim.setConfig(4)
-anim:spin()
--- print (dump(anim))
 
---callback(Ev.SYNC_START)
+-- ждём канала с пульта
+local turnon = 1
+while true do
+    turnon = turnon - 0.0002
+	if (turnon <= -1) then turnon = 1 end
+    anim:infoLed(1 - turnon*turnon, turnon*turnon, 0) -- indicate wait for start
+	_,_,_,_,_,_,_,ch8 = Sensors.rc()
+	if (ch8 > 0) then break end -- при включении тумблера выходим из режима ожидания
+end
+
+anim:infoLed(1, 1, 0) -- indicate ready
+
+local t = getGlobalTime()
+
+local t_period = 15 -- период, каждые 60 секунд глобального времени
+
+local t_near = t_period*(math.floor(t/t_period) + 1) + 4
+
+
+Timer.callAtGlobal(t_near,
+    function ()
+        anim:infoLed(0, 1, 0) -- indicate go
+        anim.setConfig(4)
+        anim:spin()
+        -- print (dump(anim))
+        callback(Ev.SYNC_START) -- go
+    end)
