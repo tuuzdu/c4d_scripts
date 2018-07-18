@@ -2,6 +2,10 @@
 
 local Animation = {}
 
+function getGlobalTime()
+	return time() + deltaTime()
+end
+
 function Animation.new(points_str, colors_str)
 
     --setGpsOrigin(60.004094, 30.362746, 0) -- устанавливаем ноль в GPS, координаты улицы Шателена, 3
@@ -10,17 +14,17 @@ function Animation.new(points_str, colors_str)
 	local strUnpack = string.unpack
 
 	local state = {stop = 0, idle = 1, flight = 2, landed = 3}
-
-	local function getGlobalTime()
-		return time() + deltaTime()
-	end
+	
+--	local function getGlobalTime()
+--		return time() + deltaTime()
+--	end
 
 	local Color = {}
 		Color.colors_str_size = string.packsize(str_format)
 		Color.colors_str = points_str	-- TODO: colors string
 		Color.first_led = 0
-		Color.last_led = 3
-		Color.leds = Ledbar.new(4)
+		Color.last_led = 28
+		Color.leds = Ledbar.new(29)
 	
 	-- кастомное преобразование hsv
 	-- линейная интерполяция (некоторые зарегистрированные значения сознательно опущены)
@@ -221,13 +225,12 @@ while true do
 	if (ch8 > 0) then break end -- при включении тумблера выходим из режима ожидания
 end
 
-anim:infoLed(1, 1, 0) -- indicate ready
-
 local t = getGlobalTime()
-
+local leap_second = 19
 local t_period = 15 -- период, каждые 60 секунд глобального времени
+local t_near = leap_second + t_period*(math.floor((t - leap_second)/t_period) + 1)
 
-local t_near = t_period*(math.floor(t/t_period) + 1) + 4
+anim:infoLed(1, 1, 0) -- indicate ready
 
 
 Timer.callAtGlobal(t_near,
