@@ -1,79 +1,73 @@
 
+-- Testing stuff
+-- require "c4d_test"
 
 local Animation = {}
 
-function getGlobalTime()
-	return time() + deltaTime()
-end
-
 function Animation.new(points_str, colors_str)
-
-    --setGpsOrigin(60.004094, 30.362746, 0) -- устанавливаем ноль в GPS, координаты улицы Шателена, 3
 
 	local tblUnpack = table.unpack
 	local strUnpack = string.unpack
 
 	local state = {stop = 0, idle = 1, flight = 2, landed = 3}
 	
---	local function getGlobalTime()
---		return time() + deltaTime()
---	end
+	local function getGlobalTime()
+		return time() + deltaTime()
+	end
 
 	local Color = {}
 		Color.colors_str_size = string.packsize(str_format)
 		Color.colors_str = points_str	-- TODO: colors string
-		Color.first_led = 0
+		Color.first_led = 4
 		Color.last_led = 28
 		Color.leds = Ledbar.new(29)
-	
-	-- кастомное преобразование hsv
-	-- линейная интерполяция (некоторые зарегистрированные значения сознательно опущены)
-	-- {pioneer_base_hue, c4d_hue}
-	Color.hue_correction_table = {
-		{0, 0},
-		{1, 15},
-		{2, 20},
-		{10, 30},
-		{15, 40},
-		{20, 45},
-		{30, 55},
-		{40, 70},
-		{60, 90},
-		{120, 120},
-		{140, 155},
-		{160, 185},
-		{210, 210},
-		{240, 240},
-		{250, 260},
-		{270, 280},
-		{290, 295},
-		{300, 300},
-		{340, 320},
-		{355, 335},
-		{357, 345},
-		{358, 355},
-		{360, 360}
-	}
+		-- кастомное преобразование hsv
+		-- линейная интерполяция (некоторые зарегистрированные значения сознательно опущены)
+		-- {pioneer_base_hue, c4d_hue}
+		Color.hue_correction_table = {
+			{0, 0},
+			{1, 15},
+			{2, 20},
+			{10, 30},
+			{15, 40},
+			{20, 45},
+			{30, 55},
+			{40, 70},
+			{60, 90},
+			{120, 120},
+			{140, 155},
+			{160, 185},
+			{210, 210},
+			{240, 240},
+			{250, 260},
+			{270, 280},
+			{290, 295},
+			{300, 300},
+			{340, 320},
+			{355, 335},
+			{357, 345},
+			{358, 355},
+			{360, 360}
+		}
+		-- {pioneer_base_saturation, c4d_saturation}
+		Color.saturation_correction_table = {
+			{0, 0},
+			{50, 10},
+			{70, 20},
+			{80, 40},
+			{85, 70},
+			{100, 100}
+		}
+		-- {pioneer_base_value, c4d_value}
+		Color.value_correction_table = {
+			{0, 0},
+			{1, 60},
+			{3, 80},
+			{9, 95},
+			{10, 100},
+			{100, 255}
+		}
 
-	-- {pioneer_base_saturation, c4d_saturation}
-	Color.saturation_correction_table = {
-		{0, 0},
-		{50, 10},
-		{70, 20},
-		{80, 40},
-		{85, 70},
-		{100, 100}
-	}
-
-	-- {pioneer_base_value, c4d_value}
-	Color.value_correction_table = {
-		{0, 0},
-		{1, 60},
-		{3, 80},
-		{9, 95},
-		{10, 100},
-		{100, 255}
-	}
 	function Color.correct(p, correct_table)
 		local i = 1
 		local pmin = 0
@@ -91,14 +85,17 @@ function Animation.new(points_str, colors_str)
 		local pnew = (pnewmin + (pnewmax - pnewmin)*(p - pmin)/(pmax - pmin))
 		return pnew
 	end
+
 	function Color.correctHue(h)
 		-- корректируем hue в соответствии с таблицей
 		return Color.correct(h, Color.hue_correction_table)
 	end
+
 	function Color.correctSaturation(s)
 		-- корректируем saturation в соответствии с таблицей
 		return Color.correct(s, Color.saturation_correction_table)
 	end
+
 	function Color.correctValue(v)
 		-- корректируем value в соответствии с таблицей
 		return Color.correct(v, Color.value_correction_table)
@@ -120,6 +117,11 @@ function Animation.new(points_str, colors_str)
 		end
 	end
 
+	function Color.setInfoLed(r, g, b)
+		Color.leds:set(0, r, g, b)
+		Color.leds:set(3, r, g, b)
+	end
+
 	local Point = {}
 		Point.points_str_size = string.packsize(str_format)
 		Point.points_str = points_str
@@ -135,24 +137,28 @@ function Animation.new(points_str, colors_str)
 	end
 
 	local Config = {}
-			Config.t_after_prepare = 2
-			Config.t_after_takeoff = 1
-			Config.init_index = 1
-			Config.last_index = points_count
+		Config.t_after_prepare = 2
+		Config.t_after_takeoff = 1
+		Config.init_index = 1
+		Config.last_index = points_count
 
 	local obj = {}
 		obj.state = state.stop
 		obj.global_time_0 = 0
 		obj.t_init = 0
 
-	function obj.setConfig(init_index, last_index, time_after_prepare, time_after_takeoff)
-		Config.init_index = init_index or 1
-		Config.last_index = last_index or points_count
-		Config.t_after_prepare = time_after_prepare or 2
-		Config.t_after_takeoff = time_after_takeoff or 1
+	function obj.setConfig(cfg)
+		Config.init_index = cfg.init_index or 1
+		Config.last_index = cfg.last_index or points_count
+		Config.t_after_prepare = cfg.time_after_prepare or 2
+		Config.t_after_takeoff = cfg.time_after_takeoff or 1
+		if cfg.lat ~= nil and cfg.lon ~= nil then
+			ap.setGpsOrigin(cfg.lat, cfg.lon, 0)
+		end
 	end
 
-	function obj:eventHandler(e)	
+	function obj:eventHandler(e)
+		Color.setInfoLed(0, 0, 1)	
 		if self.state ~= state.stop then	
 			if e == Ev.SYNC_START then
 				self.global_time_0 = getGlobalTime() + Config.t_after_prepare + Config.t_after_takeoff
@@ -191,13 +197,24 @@ function Animation.new(points_str, colors_str)
 		ap.push(Ev.MCE_LANDING)
 	end
 
-	function obj:spin()
-		self.state = state.idle
+	function obj:waitStartLoop()
+		local _,_,_,_,_,_,_,ch8 = Sensors.rc()
+		if ch8 > 0 then 
+			self.state = state.idle
+			local t = getGlobalTime()
+			local leap_second = 19
+			local t_period = 15 -- период, каждые 60 секунд глобального времени
+			local t_near = leap_second + t_period*(math.floor((t - leap_second)/t_period) + 1)
+			Color.setInfoLed(0, 1, 0)
+			Timer.callAtGlobal(t_near, function () self:eventHandler(Ev.SYNC_START) end)
+		else
+			Timer.callLater(1, function () self:waitStartLoop() end)  -- TODO Timer.callLate
+		end
 	end
 
-	function obj:infoLed(r, g, b)
-		Color.leds:set(0, r, g, b)
-		Color.leds:set(3, r, g, b)
+	function obj:spin()
+		Color.setInfoLed(1, 0, 0)
+		self:waitStartLoop()
 	end
 
 	function obj:start()
@@ -213,31 +230,14 @@ function callback(event)
 	anim:eventHandler(event)
 end
 
+local cfg = {}
+	cfg.init_index = 4
+	-- cfg.last_index = 100
+	cfg.time_after_prepare = 2
+	cfg.time_after_takeoff = 10
+	cfg.lat = 60.002065
+	cfg.lon = 30.368150
+
 anim = Animation.new(points, _)
-
--- ждём канала с пульта
-local turnon = 1
-while true do
-    turnon = turnon - 0.0002
-	if (turnon <= -1) then turnon = 1 end
-    anim:infoLed(1 - turnon*turnon, turnon*turnon, 0) -- indicate wait for start
-	_,_,_,_,_,_,_,ch8 = Sensors.rc()
-	if (ch8 > 0) then break end -- при включении тумблера выходим из режима ожидания
-end
-
-local t = getGlobalTime()
-local leap_second = 19
-local t_period = 15 -- период, каждые 60 секунд глобального времени
-local t_near = leap_second + t_period*(math.floor((t - leap_second)/t_period) + 1)
-
-anim:infoLed(1, 1, 0) -- indicate ready
-
-
-Timer.callAtGlobal(t_near,
-    function ()
-        anim:infoLed(0, 1, 0) -- indicate go
-        anim.setConfig(4)
-        anim:spin()
-        -- print (dump(anim))
-        callback(Ev.SYNC_START) -- go
-    end)
+anim.setConfig(cfg)
+anim:spin()
