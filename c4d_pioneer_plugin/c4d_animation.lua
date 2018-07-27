@@ -8,6 +8,7 @@ function Animation.new(points_str, colors_str)
 
 	local tblUnpack = table.unpack
 	local strUnpack = string.unpack
+	local fromHSV = fromHSV
 
 	local state = {stop = 0, idle = 1, flight = 2, landed = 3}
 	
@@ -21,91 +22,9 @@ function Animation.new(points_str, colors_str)
 		Color.first_led = 4
 		Color.last_led = 28
 		Color.leds = Ledbar.new(29)
-		-- кастомное преобразование hsv
-		-- линейная интерполяция (некоторые зарегистрированные значения сознательно опущены)
-		-- {pioneer_base_hue, c4d_hue}
-		Color.hue_correction_table = {
-			{0, 0},
-			{1, 15},
-			{2, 20},
-			{10, 30},
-			{15, 40},
-			{20, 45},
-			{30, 55},
-			{40, 70},
-			{60, 90},
-			{120, 120},
-			{140, 155},
-			{160, 185},
-			{210, 210},
-			{240, 240},
-			{250, 260},
-			{270, 280},
-			{290, 295},
-			{300, 300},
-			{340, 320},
-			{355, 335},
-			{357, 345},
-			{358, 355},
-			{360, 360}
-		}
-		-- {pioneer_base_saturation, c4d_saturation}
-		Color.saturation_correction_table = {
-			{0, 0},
-			{50, 10},
-			{70, 20},
-			{80, 40},
-			{85, 70},
-			{100, 100}
-		}
-		-- {pioneer_base_value, c4d_value}
-		Color.value_correction_table = {
-			{0, 0},
-			{1, 60},
-			{3, 80},
-			{9, 95},
-			{10, 100},
-			{100, 255}
-		}
-
-	function Color.correct(p, correct_table)
-		local i = 1
-		local pmin = 0
-		local pmax = 0
-		while i < #correct_table do
-			pmin = correct_table[i][2]
-			pmax = correct_table[i + 1][2]
-			if (p >= pmin and p <= pmax) then
-				break
-			end
-			i = i + 1
-		end
-		local pnewmin = correct_table[i][1]
-		local pnewmax = correct_table[i+1][1]
-		local pnew = (pnewmin + (pnewmax - pnewmin)*(p - pmin)/(pmax - pmin))
-		return pnew
-	end
-
-	function Color.correctHue(h)
-		-- корректируем hue в соответствии с таблицей
-		return Color.correct(h, Color.hue_correction_table)
-	end
-
-	function Color.correctSaturation(s)
-		-- корректируем saturation в соответствии с таблицей
-		return Color.correct(s, Color.saturation_correction_table)
-	end
-
-	function Color.correctValue(v)
-		-- корректируем value в соответствии с таблицей
-		return Color.correct(v, Color.value_correction_table)
-	end
 	
 	function Color.getColor(index)
 		local t, _, _, _, h, s, v, _ = strUnpack(str_format, Color.colors_str, 1 + (index - 1) * Color.colors_str_size)
-		h = Color.correctHue(h)
-		s = Color.correctSaturation(s)
-		v = Color.correctValue(v)
 		local r, g, b = fromHSV(h, s, v)
 		t = t / 1000
 		return t, r, g, b
