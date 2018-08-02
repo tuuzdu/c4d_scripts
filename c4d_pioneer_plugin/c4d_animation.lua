@@ -71,8 +71,10 @@ function Animation.new(points_str, colors_str)
 		Config.last_index = cfg.last_index or points_count
 		Config.t_after_prepare = cfg.time_after_prepare or 2
 		Config.t_after_takeoff = cfg.time_after_takeoff or 1
-		if cfg.lat ~= nil and cfg.lon ~= nil then
-			ap.setGpsOrigin(cfg.lat, cfg.lon, 0)
+		Config.lat = cfg.lat or origin_lat
+		Config.lon = cfg.lon or origin_lon
+		if Config.lat ~= nil and Config.lon ~= nil then
+			ap.setGpsOrigin(Config.lat, Config.lon, 0)
 		end
 	end
 
@@ -152,10 +154,10 @@ end
 local cfg = {}
 	cfg.init_index = 4
 	-- cfg.last_index = 100
-	cfg.time_after_prepare = 2
+	cfg.time_after_prepare = 7
 	cfg.time_after_takeoff = 10
-	cfg.lat = 60.002065
-	cfg.lon = 30.368150
+	-- cfg.lat = 60.086252
+	-- cfg.lon = 30.421412
 
 anim = Animation.new(points, _)
 anim.setConfig(cfg)

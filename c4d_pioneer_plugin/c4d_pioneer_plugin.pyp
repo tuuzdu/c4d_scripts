@@ -37,6 +37,7 @@ res = type('res', (), dict(
     TEXT_HEIGHT_OFFSET= 1008, # Подпись. Сдвиг по высоте
     TEXT_TIME_STEP= 1009, # Подпись. Временной шаг в секундах
     TEXT_TEMPLATE_PATH= 1010, # Подпись. Выбор файла шаблона
+    TEXT_LAT_LON_PARTIAL=1011,
     
     
     # This is the ID for the group that contains the task widgets.
@@ -59,6 +60,9 @@ res = type('res', (), dict(
     EDIT_HEIGHT_OFFSET= 4008, # Текстовое поле. Сдвиг по высоте
     EDIT_TIME_STEP= 4009, # Текстовое поле с временным шагом в секундах
     EDIT_TEMPLATE_PATH = 4010, # Идентификатор текстового поля, в котором хранится путь до шаблона c4d_animation.lua
+
+    EDIT_LAT = 4011,
+    EDIT_LON = 4012,
     
     CHECKBOX_GLOBAL_SCALE = 5000, #Чекбокс, регулирующий редактирование глобального масштаба
     
@@ -68,6 +72,8 @@ res = type('res', (), dict(
     STR_CFG_SCALE_X = "ScaleX",
     STR_CFG_SCALE_Y = "ScaleY",
     STR_CFG_SCALE_Z = "ScaleZ",
+    STR_CFG_LAT = "Lat",
+    STR_CFG_LON = "Lon",
     STR_CFG_PREFIX = "Prefix",
     STR_CFG_HEIGHT_OFFSET = "HeightOffset",
     STR_CFG_OBJECT_COUNT = "ObjectCount",
@@ -109,6 +115,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X, self.GetString(res.EDIT_SCALE_X))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y, self.GetString(res.EDIT_SCALE_Y))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z, self.GetString(res.EDIT_SCALE_Z))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_LAT, self.GetString(res.EDIT_LAT))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_LON, self.GetString(res.EDIT_LON))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_PREFIX, self.GetString(res.EDIT_PREFIX))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET, self.GetInt32(res.EDIT_HEIGHT_OFFSET))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT, self.GetInt32(res.EDIT_OBJECT_COUNT))
@@ -141,6 +149,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.SetString(res.EDIT_SCALE_X, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X))
         self.SetString(res.EDIT_SCALE_Y, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y))
         self.SetString(res.EDIT_SCALE_Z, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z))
+        self.SetString(res.EDIT_LAT, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_LAT))
+        self.SetString(res.EDIT_LON, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_LON))
         self.SetString(res.EDIT_PREFIX, Config.get(res.STR_CFG_SECTION, res.STR_CFG_PREFIX))
         self.SetString(res.EDIT_OUTPUT_FOLDER, Config.get(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER))
         self.SetString(res.EDIT_TEMPLATE_PATH, Config.get(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH))
@@ -193,6 +203,17 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         edit_scale_z = self.AddEditText(res.EDIT_SCALE_Z, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         self.GroupEnd()
         # Конец раздела Partial Scale Factor
+
+        # Раздел Latitude Longtitude
+        self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=global_initw)
+        self.SetString(res.TEXT_LAT_LON_PARTIAL, "Local origin (lat, lon):")
+
+        # группа предназначена для объединения двух редактируемых текстовых поля
+        self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
+        edit_lat = self.AddEditText(res.EDIT_LAT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
+        edit_lon = self.AddEditText(res.EDIT_LON, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
+        self.GroupEnd()
+        # Конец раздела Latitude Longtitude
         
         # Раздел Rotate
         self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=global_initw)
@@ -291,12 +312,14 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         elif param == res.BUTTON_GENERATE:
             # получаем параметры из GUI-компонентов
             error_string = ''
-            time_step = scale_x = scale_y = scale_z = None
+            time_step = scale_x = scale_y = scale_z = lat = lon = None
             try:
                 time_step = float(self.GetString(res.EDIT_TIME_STEP))
                 scale_x = float(self.GetString(res.EDIT_SCALE_X))
                 scale_y = float(self.GetString(res.EDIT_SCALE_Y))
                 scale_z = float(self.GetString(res.EDIT_SCALE_Z))
+                lat = float(self.GetString(res.EDIT_LAT))
+                lon = float(self.GetString(res.EDIT_LON))
             except:
                 error_string = error_string + 'Invalid floating point number\n'
                 pass
@@ -328,6 +351,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 self.plugin.scale_x = scale_x
                 self.plugin.scale_y = scale_y
                 self.plugin.scale_z = scale_z
+                self.plugin.lat = lat
+                self.plugin.lon = lon
                 self.plugin.height_offset = height_offset
                 self.plugin.prefix = prefix
                 self.plugin.rotation = rotation
@@ -362,6 +387,8 @@ class c4d_capture(c4d.plugins.CommandData):
     scale_x = 1.0
     scale_y = 1.0
     scale_z = 1.0
+    lat = 0.0
+    lon = 0.0
     rotation = 0
     height_offset = 0.4
     prefix = "drone_"
@@ -554,10 +581,12 @@ class c4d_capture(c4d.plugins.CommandData):
                 s = """"
 local points_count = {0:d}
 local str_format = \"{1:s}\"
+local origin_lat = {2:f}
+local origin_lon = {3:f}
 --for n = 0, {0:d} do
     --t, x, y, z, r, g, b, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
     --print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)
---end """.format(int((time - self.time_step)/self.time_step), self.STRUCT_FORMAT)
+--end """.format(int((time - self.time_step)/self.time_step), self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
         gui.MessageDialog("Files generated!")
 
