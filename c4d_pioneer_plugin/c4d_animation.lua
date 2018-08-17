@@ -55,16 +55,13 @@ function Animation.new(points_str, colors_str)
 		return t, x, y, z
 	end
 
-	local Config = {}
-		Config.t_after_prepare = 2
-		Config.t_after_takeoff = 1
-		Config.init_index = 1
-		Config.last_index = points_count
 
 	local obj = {}
 		obj.state = state.stop
 		obj.global_time_0 = 0
 		obj.t_init = 0
+
+	local Config = {}
 
 	function obj.setConfig(cfg)
 		Config.init_index = cfg.init_index or 1
