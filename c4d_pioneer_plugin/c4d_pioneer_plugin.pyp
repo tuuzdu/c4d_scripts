@@ -506,6 +506,11 @@ class c4d_capture(c4d.plugins.CommandData):
 
         time = 0
         points_array = []
+
+        shot_time = c4d.BaseTime(time)
+        doc.SetTime(shot_time)
+        c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)
+
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
                 '-- [time]=ms, [x][y][z]=cm, [r][g][b]=0-255\n'\

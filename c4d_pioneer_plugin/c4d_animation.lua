@@ -149,10 +149,10 @@ function callback(event)
 end
 
 local cfg = {}
-	cfg.init_index = 4
+	cfg.init_index = 1
 	-- cfg.last_index = 100
 	cfg.time_after_prepare = 7
-	cfg.time_after_takeoff = 10
+	cfg.time_after_takeoff = 8
 	-- cfg.lat = 60.086252
 	-- cfg.lon = 30.421412
 
