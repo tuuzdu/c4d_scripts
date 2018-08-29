@@ -398,7 +398,7 @@ class c4d_capture(c4d.plugins.CommandData):
     template_path = None
     drone_index = None # динамическая переменная с определением активного робота
     
-    STRUCT_FORMAT = "iiiHHBB" # единственная константа, которая не будет изменяться
+    STRUCT_FORMAT = "HhhHHBB" # единственная константа, которая не будет изменяться
     FOLDER_NAME = "./points/"
     LUA_FOLDER_NAME = "./scripts/"
     
@@ -513,7 +513,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
-                '-- [time]=ms, [x][y][z]=cm, [r][g][b]=0-255\n'\
+                '-- [time]=cs, [x][y][z]=cm, [h] = 0-360 [s][v]=0-100\n'\
                 'local points  =  "'.format(self.time_step, self.object_count, self.STRUCT_FORMAT)
             points_array.append([s])
 
@@ -558,9 +558,9 @@ class c4d_capture(c4d.plugins.CommandData):
                 vecPosition.y = vecPosition.y + self.height_offset
                 
                 s = struct.pack(self.STRUCT_FORMAT,  
-                                                int(time * 1000),   #i 
-                                                int(vecPosition.x), #i
-                                                int(vecPosition.z), #i
+                                                int(time * 100),   #H
+                                                int(vecPosition.x), #h
+                                                int(vecPosition.z), #h
                                                 int(vecPosition.y), #H
                                                 int(vecHSV.x * 360), #H
                                                 int(vecHSV.y * 100), #B
@@ -589,8 +589,8 @@ local str_format = \"{1:s}\"
 local origin_lat = {2:f}
 local origin_lon = {3:f}
 --for n = 0, {0:d} do
-    --t, x, y, z, r, g, b, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
-    --print (t/1000, x/100, y/100, z/100, r/255, g/255, b/255)
+    --t, x, y, z, h, s, v, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
+    --print (t/100, x/100, y/100, z/100, h, s, v)
 --end """.format(int((time - self.time_step)/self.time_step), self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
         gui.MessageDialog("Files generated!")

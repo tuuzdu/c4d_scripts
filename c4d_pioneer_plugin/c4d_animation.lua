@@ -26,7 +26,7 @@ function Animation.new(points_str, colors_str)
 	function Color.getColor(index)
 		local t, _, _, _, h, s, v, _ = strUnpack(str_format, Color.colors_str, 1 + (index - 1) * Color.colors_str_size)
 		local r, g, b = fromHSV(h, s, v)
-		t = t / 1000
+		t = t / 100
 		return t, r, g, b
 	end
 
@@ -48,7 +48,7 @@ function Animation.new(points_str, colors_str)
 
 	function Point.getPoint(index)
 		local t, x, y, z = strUnpack(str_format, Point.points_str, 1 + (index - 1) * Point.points_str_size)
-		t = t / 1000
+		t = t / 100
 		x = x / 100
 		y = y / 100
 		z = z / 100
