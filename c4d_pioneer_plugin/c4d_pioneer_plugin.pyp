@@ -224,7 +224,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         
         # Раздел Base Height
         self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_HEIGHT_OFFSET, "Height offset (cm):")
+        self.SetString(res.TEXT_HEIGHT_OFFSET, "Height offset (m):")
         
         EDIT_HEIGHT_OFFSET = self.AddEditNumberArrows(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Base Height
@@ -353,7 +353,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 self.plugin.scale_z = scale_z
                 self.plugin.lat = lat
                 self.plugin.lon = lon
-                self.plugin.height_offset = height_offset
+                self.plugin.height_offset = height_offset * 100
                 self.plugin.prefix = prefix
                 self.plugin.rotation = rotation
                 self.plugin.object_count = object_count
@@ -390,7 +390,7 @@ class c4d_capture(c4d.plugins.CommandData):
     lat = 0.0
     lon = 0.0
     rotation = 0
-    height_offset = 0.4
+    height_offset = 4
     prefix = "drone_"
     output_folder = "."
     # инициализируются позже:
