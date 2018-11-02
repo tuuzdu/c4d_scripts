@@ -6,11 +6,10 @@ local Animation = {}
 
 function Animation.new(points_str, colors_str)
 
-	local tblUnpack = table.unpack
 	local strUnpack = string.unpack
 	local fromHSV = fromHSV
 
-	local state = {stop = 0, idle = 1, flight = 2, landed = 3}
+	local state = {stop = 0, idle = 1, flight = 2}
 	
 	local function getGlobalTime()
 		return time() + deltaTime()
@@ -89,6 +88,7 @@ function Animation.new(points_str, colors_str)
 		self.state = state.flight
 		ap.push(Ev.MCE_PREFLIGHT) 
 		sleep(Config.t_after_prepare)
+		Color.setInfoLed(0, 0, 0)
 		ap.push(Ev.MCE_TAKEOFF) -- Takeoff altitude should be set by AP parameter
 		self.t_init = Point.getPoint(Config.init_index)
 		Timer.callAtGlobal(self.global_time_0, 	function () self:animLoop(Config.init_index) end)
@@ -111,6 +111,7 @@ function Animation.new(points_str, colors_str)
 	
 	function obj:landing()	
 		Color.setMatrix(0, 0, 0)
+		Color.setInfoLed(0, 0, 1)
 		self.state = state.landing
 		ap.push(Ev.MCE_LANDING)
 	end
@@ -121,12 +122,12 @@ function Animation.new(points_str, colors_str)
 			self.state = state.idle
 			local t = getGlobalTime()
 			local leap_second = 19
-			local t_period = 15 -- период, каждые 60 секунд глобального времени
+			local t_period = 15 -- time window
 			local t_near = leap_second + t_period*(math.floor((t - leap_second)/t_period) + 1)
 			Color.setInfoLed(0, 1, 0)
 			Timer.callAtGlobal(t_near, function () self:eventHandler(Ev.SYNC_START) end)
 		else
-			Timer.callLater(1, function () self:waitStartLoop() end)  -- TODO Timer.callLate
+			Timer.callLater(1, function () self:waitStartLoop() end)
 		end
 	end
 
@@ -150,11 +151,11 @@ end
 
 local cfg = {}
 	cfg.init_index = 1
-	-- cfg.last_index = 100
+ -- cfg.last_index = 100
 	cfg.time_after_prepare = 7
 	cfg.time_after_takeoff = 8
-	-- cfg.lat = 60.086252
-	-- cfg.lon = 30.421412
+ -- cfg.lat = 60.086252
+ -- cfg.lon = 30.421412
 
 anim = Animation.new(points, _)
 anim.setConfig(cfg)
