@@ -38,6 +38,7 @@ res = type('res', (), dict(
     TEXT_TIME_STEP= 1009, # Подпись. Временной шаг в секундах
     TEXT_TEMPLATE_PATH= 1010, # Подпись. Выбор файла шаблона
     TEXT_LAT_LON_PARTIAL=1011,
+    TEXT_MAX_VELOCITY = 1012,
     
     
     # This is the ID for the group that contains the task widgets.
@@ -60,9 +61,9 @@ res = type('res', (), dict(
     EDIT_HEIGHT_OFFSET= 4008, # Текстовое поле. Сдвиг по высоте
     EDIT_TIME_STEP= 4009, # Текстовое поле с временным шагом в секундах
     EDIT_TEMPLATE_PATH = 4010, # Идентификатор текстового поля, в котором хранится путь до шаблона c4d_animation.lua
-
     EDIT_LAT = 4011,
     EDIT_LON = 4012,
+    EDIT_MAX_VELOCITY = 4013, # Максимальная скорость при проверке объектов
     
     CHECKBOX_GLOBAL_SCALE = 5000, #Чекбокс, регулирующий редактирование глобального масштаба
     
@@ -77,6 +78,7 @@ res = type('res', (), dict(
     STR_CFG_PREFIX = "Prefix",
     STR_CFG_HEIGHT_OFFSET = "HeightOffset",
     STR_CFG_OBJECT_COUNT = "ObjectCount",
+    STR_CFG_MAX_VELOCITY = "MaxVelocity",
     STR_CFG_ROTATION = "Rotation",
     STR_CFG_TEMPLATE_PATH = "TemplatePath",
     STR_CFG_OUTPUT_FOLDER = "OutputFolder",
@@ -120,6 +122,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_PREFIX, self.GetString(res.EDIT_PREFIX))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET, self.GetInt32(res.EDIT_HEIGHT_OFFSET))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT, self.GetInt32(res.EDIT_OBJECT_COUNT))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY, self.GetString(res.EDIT_MAX_VELOCITY))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_ROTATION, self.GetInt32(res.EDIT_ROTATION))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH, self.GetString(res.EDIT_TEMPLATE_PATH))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER, self.GetString(res.EDIT_OUTPUT_FOLDER))
@@ -154,6 +157,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.SetString(res.EDIT_PREFIX, Config.get(res.STR_CFG_SECTION, res.STR_CFG_PREFIX))
         self.SetString(res.EDIT_OUTPUT_FOLDER, Config.get(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER))
         self.SetString(res.EDIT_TEMPLATE_PATH, Config.get(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH))
+        self.SetString(res.EDIT_MAX_VELOCITY, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY))
         self.SetInt32(res.EDIT_HEIGHT_OFFSET, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET), min = 0)
         self.SetInt32(res.EDIT_ROTATION, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_ROTATION), min = 0, max = 360)
         self.SetInt32(res.EDIT_OBJECT_COUNT, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT), min = 1)
@@ -242,6 +246,13 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         
         edit_object_count = self.AddEditNumberArrows(res.EDIT_OBJECT_COUNT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Object count
+
+        # Раздел Max velocity
+        self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=global_initw)
+        self.SetString(res.TEXT_MAX_VELOCITY, "Max velocity:")
+
+        edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        # Конец раздела Max velocity
         
         # Раздел Template path
         self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=global_initw)
@@ -320,6 +331,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 scale_z = float(self.GetString(res.EDIT_SCALE_Z))
                 lat = float(self.GetString(res.EDIT_LAT))
                 lon = float(self.GetString(res.EDIT_LON))
+                max_velocity = float(self.GetString(res.EDIT_MAX_VELOCITY))
             except:
                 error_string = error_string + 'Invalid floating point number\n'
                 pass
@@ -331,7 +343,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
             output_folder = self.GetString(res.EDIT_OUTPUT_FOLDER)
             
             # проверяем, что параметры прочитались
-            if time_step is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or output_folder is None:
+            if time_step is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or max_velocity is None or output_folder is None:
                 error_string = error_string + 'Not all values specified.\n'
             # проверяем адекватность введённых значений
             if (time_step < 1.0/30): # быстрее 30 кадров в секунду нельзя
@@ -345,7 +357,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 gui.MessageDialog(error_string)
                 return False
             else:
-                print("time_step={0}, scale_x={1}, scale_y={2}, scale_z={3}, rotation={4}, height_offset={5}, prefix={6}, N={7}, template={8} folder={9}".format(time_step, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder))
+                print("time_step={0}, scale_x={1}, scale_y={2}, scale_z={3}, rotation={4}, height_offset={5}, prefix={6}, N={7}, template={8} folder={9} max_vel={10}".format(time_step, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
                 # прокидываем значения в модуль для выполнения
                 self.plugin.time_step = time_step
                 self.plugin.scale_x = scale_x
@@ -357,6 +369,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 self.plugin.prefix = prefix
                 self.plugin.rotation = rotation
                 self.plugin.object_count = object_count
+                self.plugin.max_velocity = max_velocity
                 self.plugin.template_path = template_path
                 self.plugin.output_folder = output_folder
                 self.plugin.main() # наконец вызываем долгожданный метод
@@ -384,6 +397,7 @@ class c4d_capture(c4d.plugins.CommandData):
     
     time_step = 0.5
     object_count = 10
+    max_velocity = 5
     scale_x = 1.0
     scale_y = 1.0
     scale_z = 1.0
@@ -459,6 +473,14 @@ class c4d_capture(c4d.plugins.CommandData):
             else:
                 objects.append(obj)
         return objects
+
+    def getPositions (self, objects):
+        vecPosition = []
+        for obj in objects:
+            vec = obj.GetAbsPos()
+            vec.y += self.height_offset
+            vecPosition.append(vec)
+        return vecPosition
         
     def getActiveObjectName(self):
         active_object = self.doc.GetActiveObject()
@@ -483,7 +505,6 @@ class c4d_capture(c4d.plugins.CommandData):
             return
         header = 'POST /pioneer/v0.1/upload HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length: {0}\r\nConnection: Keep-Alive\r\nAccept-Encoding: gzip, deflate\r\nAccept-Language: ru-RU,en,*\r\nUser-Agent: Mozilla/5.0\r\nHost: 127.0.0.1:8080\r\n\r\n'
 
-
         source_code = f.read()
 
         header = header.format(str(len(source_code))).encode('ascii')
@@ -501,15 +522,17 @@ class c4d_capture(c4d.plugins.CommandData):
         doc = documents.GetActiveDocument()
         self.doc = doc
         maxTime = doc.GetMaxTime().Get()
-        objNames = self.getNames()
-        objects = self.getObjects(objNames)
-
+        maxTime = (maxTime // self.time_step + 2) * self.time_step
         time = 0
         points_array = []
 
         shot_time = c4d.BaseTime(time)
         doc.SetTime(shot_time)
         c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)
+
+        objNames = self.getNames()
+        objects = self.getObjects(objNames)
+        prev_vecPosition = self.getPositions(objects)
 
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
@@ -528,7 +551,7 @@ class c4d_capture(c4d.plugins.CommandData):
                     objMaterial = obj.GetTag(Ttexture).GetMaterial()
                 except AttributeError:
                     # print ("First object tag must be Material")
-                    gui.MessageDialog("Didn't find object's ({0:s}) tag \"Material\"".format(obj))
+                    gui.MessageDialog("Didn't find object's ({0:s}) tag \"Material\"".format(obj.GetName()))
                     return
                 vecRGB = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR) # получаем RGB
                 # это ненормированный вектор RGB, исправляем ситуацию. Норма подразумевается равномерной
@@ -542,6 +565,7 @@ class c4d_capture(c4d.plugins.CommandData):
                     
                 #Get position
                 vecPosition = obj.GetAbsPos()
+
                 # масштабирование пространственного вектора
                 vecPosition.x = vecPosition.x*self.scale_x
                 vecPosition.y = vecPosition.y*self.scale_y
@@ -556,8 +580,17 @@ class c4d_capture(c4d.plugins.CommandData):
                 
                 # подъём сцены на некоторую высоту
                 vecPosition.y = vecPosition.y + self.height_offset
-                
-                s = struct.pack(self.STRUCT_FORMAT,  
+
+                # Calculate velocity
+                vel = pow((vecPosition.x - prev_vecPosition[counter].x) ** 2 + (vecPosition.y - prev_vecPosition[counter].y) ** 2 + (vecPosition.z - prev_vecPosition[counter].z) ** 2, 0.5)
+                prev_vecPosition[counter] = vecPosition
+                vel = (vel / self.time_step) / 100
+                # print vel
+                if vel > self.max_velocity:
+                    gui.MessageDialog("Object's velocity ({0:s}) more than {1} m/s. Time is {2}".format(obj.GetName(), self.max_velocity, time))
+                    return
+
+                s = struct.pack(self.STRUCT_FORMAT,
                                                 int(time * 100),   #H
                                                 int(vecPosition.x), #h
                                                 int(vecPosition.z), #h
@@ -568,7 +601,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 # print s
                 s_xhex = binascii.hexlify(s)
                 points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
-                counter = counter + 1
+                counter += 1
             time += self.time_step
 
         if not os.path.exists(os.path.dirname(self.getPointsFolder())):
