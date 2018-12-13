@@ -186,18 +186,18 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         
         # начинаем группу-таблицу | текст | поле редактиирования |
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols = 2, rows = 6)
-        global_initw = 250 # размер текстового поля должен быть одинаковым
+        global_initw = 450 # размер текстового поля должен быть одинаковым
         
         # Раздел Time Step
-        self.AddStaticText(res.TEXT_TIME_STEP, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_TIME_STEP, "Time step:")
+        self.AddStaticText(res.TEXT_TIME_STEP, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_TIME_STEP, "Time step for capture animation (s):")
         
         edit_time_step = self.AddEditText(res.EDIT_TIME_STEP, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Time Step
         
         
         # Раздел Partial Scale Factor
-        self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=global_initw)
+        self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_SCALE_PARTIAL, "Partial scale factor (x, y, z):")
         
         # группа предназначена для объединения трёх редактируемых текстовых поля
@@ -209,8 +209,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         # Конец раздела Partial Scale Factor
 
         # Раздел Latitude Longtitude
-        self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_LAT_LON_PARTIAL, "Local origin (lat, lon):")
+        self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_LAT_LON_PARTIAL, "Local origin (lat, lon; degrees):")
 
         # группа предназначена для объединения двух редактируемых текстовых поля
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
@@ -220,43 +220,43 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         # Конец раздела Latitude Longtitude
         
         # Раздел Rotate
-        self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_ROTATION, "Rotation:")
+        self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_ROTATION, "Horizontal rotation (counter clockwise; degrees):")
         
         edit_rotate = self.AddEditNumberArrows(res.EDIT_ROTATION, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Rotate
         
         # Раздел Base Height
-        self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=global_initw)
+        self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_HEIGHT_OFFSET, "Height offset (m):")
         
         EDIT_HEIGHT_OFFSET = self.AddEditNumberArrows(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Base Height
         
         # Раздел Prefix
-        self.AddStaticText(res.TEXT_PREFIX, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_PREFIX, "Prefix:")
+        self.AddStaticText(res.TEXT_PREFIX, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_PREFIX, "Object's name prefix:")
         
         edit_prefix = self.AddEditText(res.EDIT_PREFIX, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Prefix
         
         # Раздел Object count
-        self.AddStaticText(res.TEXT_OBJECT_COUNT, c4d.BFH_RIGHT, initw=global_initw)
+        self.AddStaticText(res.TEXT_OBJECT_COUNT, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_OBJECT_COUNT, "Object count:")
         
         edit_object_count = self.AddEditNumberArrows(res.EDIT_OBJECT_COUNT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Object count
 
         # Раздел Max velocity
-        self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_MAX_VELOCITY, "Max velocity:")
+        self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_MAX_VELOCITY, "Max velocity check (0 for uncheck; m/s):")
 
-        edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_max_velocity = self.AddEditNumberArrows(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Max velocity
         
         # Раздел Template path
-        self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_TEMPLATE_PATH, "Script template:")
+        self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_TEMPLATE_PATH, "LUA script template:")
         
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
@@ -268,8 +268,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         
         
         # Раздел Output Folder
-        self.AddStaticText(res.TEXT_OUTPUT_FOLDER, c4d.BFH_RIGHT, initw=global_initw)
-        self.SetString(res.TEXT_OUTPUT_FOLDER, "Output folder:")
+        self.AddStaticText(res.TEXT_OUTPUT_FOLDER, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_OUTPUT_FOLDER, "Output folder for generated scripts:")
         
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
@@ -586,7 +586,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 prev_vecPosition[counter] = vecPosition
                 vel = (vel / self.time_step) / 100
                 # print vel
-                if vel > self.max_velocity:
+                if vel > self.max_velocity and self.max_velocity > 0:
                     gui.MessageDialog("Object's velocity ({0:s}) more than {1} m/s. Time is {2}".format(obj.GetName(), self.max_velocity, time))
                     return
 
