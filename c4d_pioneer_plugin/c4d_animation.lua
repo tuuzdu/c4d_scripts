@@ -29,15 +29,16 @@ function Animation.new(points_str, colors_str)
 		return t, r, g, b
 	end
 
-	function Color.setMatrix(r, g, b)
-		for i = Color.first_led, Color.last_led, 1 do
+	function Color.setAllLEDs(r, g, b)
+		for i = 0, Color.last_led, 1 do
 			Color.leds:set(i, r, g, b)
 		end
 	end
 
-	function Color.setInfoLed(r, g, b)
-		Color.leds:set(0, r, g, b)
-		Color.leds:set(3, r, g, b)
+	function Color.setInfoLEDs(r, g, b)
+		for i = 0, 3, 1 do
+			Color.leds:set(i, r, g, b)
+		end
 	end
 
 	local Point = {}
@@ -65,18 +66,19 @@ function Animation.new(points_str, colors_str)
 	function obj.setConfig(cfg)
 		Config.init_index = cfg.init_index or 1
 		Config.last_index = cfg.last_index or points_count
-		Config.t_after_prepare = cfg.time_after_prepare or 2
-		Config.t_after_takeoff = cfg.time_after_takeoff or 1
+		Config.t_after_prepare = cfg.time_after_prepare or 7
+		Config.t_after_takeoff = cfg.time_after_takeoff or 8
 		Config.lat = cfg.lat or origin_lat
 		Config.lon = cfg.lon or origin_lon
 		if Config.lat ~= nil and Config.lon ~= nil then
 			ap.setGpsOrigin(Config.lat, Config.lon, 0)
 		end
+		Config.light_onlanding = cfg.light_onlanding or true
 	end
 
 	function obj:eventHandler(e)
-		Color.setInfoLed(0, 0, 1)	
-		if self.state ~= state.stop then	
+		Color.setInfoLEDs(0, 0, 1)
+		if self.state ~= state.stop then
 			if e == Ev.SYNC_START then
 				self.global_time_0 = getGlobalTime() + Config.t_after_prepare + Config.t_after_takeoff
 				self:animInit()
@@ -88,7 +90,7 @@ function Animation.new(points_str, colors_str)
 		self.state = state.flight
 		ap.push(Ev.MCE_PREFLIGHT) 
 		sleep(Config.t_after_prepare)
-		Color.setInfoLed(0, 0, 0)
+		Color.setInfoLEDs(0, 0, 0)
 		ap.push(Ev.MCE_TAKEOFF) -- Takeoff altitude should be set by AP parameter
 		self.t_init = Point.getPoint(Config.init_index)
 		Timer.callAtGlobal(self.global_time_0, 	function () self:animLoop(Config.init_index) end)
@@ -99,7 +101,7 @@ function Animation.new(points_str, colors_str)
 			local _, x, y, z = Point.getPoint(point_index)
 			local _, r, g, b = Color.getColor(point_index)
 			local t = Point.getPoint(point_index + 1)
-			Color.setMatrix(r, g, b)
+			Color.setAllLEDs(r, g, b)
 			Point.setPoint(x, y, z)
 			Timer.callAtGlobal(self.global_time_0 + t - self.t_init, function () self:animLoop(point_index + 1) end)
 		else
@@ -109,9 +111,11 @@ function Animation.new(points_str, colors_str)
 		end
 	end
 	
-	function obj:landing()	
-		Color.setMatrix(0, 0, 0)
-		Color.setInfoLed(0, 0, 1)
+	function obj:landing()
+		if Config.light_onlanding == false then
+			Color.setAllLEDs(0, 0, 0)
+			Color.setInfoLEDs(0, 0, 1)
+		end
 		self.state = state.landing
 		ap.push(Ev.MCE_LANDING)
 	end
@@ -124,7 +128,7 @@ function Animation.new(points_str, colors_str)
 			local leap_second = 19
 			local t_period = 15 -- time window
 			local t_near = leap_second + t_period*(math.floor((t - leap_second)/t_period) + 1)
-			Color.setInfoLed(0, 1, 0)
+			Color.setInfoLEDs(0, 1, 0)
 			Timer.callAtGlobal(t_near, function () self:eventHandler(Ev.SYNC_START) end)
 		else
 			Timer.callLater(1, function () self:waitStartLoop() end)
@@ -132,7 +136,7 @@ function Animation.new(points_str, colors_str)
 	end
 
 	function obj:spin()
-		Color.setInfoLed(1, 0, 0)
+		Color.setInfoLEDs(1, 0, 0)
 		self:waitStartLoop()
 	end
 
@@ -151,11 +155,9 @@ end
 
 local cfg = {}
 	cfg.init_index = 1
- -- cfg.last_index = 100
 	cfg.time_after_prepare = 7
 	cfg.time_after_takeoff = 8
- -- cfg.lat = 60.086252
- -- cfg.lon = 30.421412
+	cfg.light_onlanding = true
 
 anim = Animation.new(points, _)
 anim.setConfig(cfg)

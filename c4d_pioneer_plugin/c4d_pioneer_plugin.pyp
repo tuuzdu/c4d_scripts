@@ -621,9 +621,10 @@ local points_count = {0:d}
 local str_format = \"{1:s}\"
 local origin_lat = {2:f}
 local origin_lon = {3:f}
+--print ("t, s:\tx, m:\ty, m:\tz, m:\th, 360deg:\ts, byte:\tv, byte:")
 --for n = 0, {0:d} do
     --t, x, y, z, h, s, v, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
-    --print (t/100, x/100, y/100, z/100, h, s, v)
+    --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, h, s, v))
 --end """.format(int((time - self.time_step)/self.time_step), self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
         gui.MessageDialog("Files generated!")
