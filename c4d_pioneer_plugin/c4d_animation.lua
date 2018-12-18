@@ -77,10 +77,10 @@ function Animation.new(points_str, colors_str)
 	end
 
 	function obj:eventHandler(e)
-		Color.setInfoLEDs(0, 0, 1)
 		if self.state ~= state.stop then
 			if e == Ev.SYNC_START then
 				self.global_time_0 = getGlobalTime() + Config.t_after_prepare + Config.t_after_takeoff
+				Color.setInfoLEDs(0, 0, 1)
 				self:animInit()
 			end
 		end
