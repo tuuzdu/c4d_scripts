@@ -120,7 +120,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_LAT, self.GetString(res.EDIT_LAT))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_LON, self.GetString(res.EDIT_LON))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_PREFIX, self.GetString(res.EDIT_PREFIX))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET, self.GetInt32(res.EDIT_HEIGHT_OFFSET))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET, self.GetString(res.EDIT_HEIGHT_OFFSET))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT, self.GetInt32(res.EDIT_OBJECT_COUNT))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY, self.GetString(res.EDIT_MAX_VELOCITY))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_ROTATION, self.GetInt32(res.EDIT_ROTATION))
@@ -158,7 +158,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.SetString(res.EDIT_OUTPUT_FOLDER, Config.get(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER))
         self.SetString(res.EDIT_TEMPLATE_PATH, Config.get(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH))
         self.SetString(res.EDIT_MAX_VELOCITY, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY))
-        self.SetInt32(res.EDIT_HEIGHT_OFFSET, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET), min = 0)
+        self.SetString(res.EDIT_HEIGHT_OFFSET, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET))
         self.SetInt32(res.EDIT_ROTATION, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_ROTATION), min = 0, max = 360)
         self.SetInt32(res.EDIT_OBJECT_COUNT, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT), min = 1)
 
@@ -230,7 +230,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_HEIGHT_OFFSET, "Height offset (m):")
         
-        EDIT_HEIGHT_OFFSET = self.AddEditNumberArrows(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_height_offset = self.AddEditText(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Base Height
         
         # Раздел Prefix
@@ -323,7 +323,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         elif param == res.BUTTON_GENERATE:
             # получаем параметры из GUI-компонентов
             error_string = ''
-            time_step = scale_x = scale_y = scale_z = lat = lon = None
+            time_step = scale_x = scale_y = scale_z = lat = lon = max_velocity = height_offset = None
             try:
                 time_step = float(self.GetString(res.EDIT_TIME_STEP))
                 scale_x = float(self.GetString(res.EDIT_SCALE_X))
@@ -332,11 +332,11 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 lat = float(self.GetString(res.EDIT_LAT))
                 lon = float(self.GetString(res.EDIT_LON))
                 max_velocity = float(self.GetString(res.EDIT_MAX_VELOCITY))
+                height_offset = float(self.GetString(res.EDIT_HEIGHT_OFFSET))
             except:
                 error_string = error_string + 'Invalid floating point number\n'
                 pass
             prefix = self.GetString(res.EDIT_PREFIX)
-            height_offset = self.GetInt32(res.EDIT_HEIGHT_OFFSET)
             object_count =  self.GetInt32(res.EDIT_OBJECT_COUNT)
             rotation =  self.GetInt32(res.EDIT_ROTATION)
             template_path = self.GetString(res.EDIT_TEMPLATE_PATH)
@@ -404,7 +404,7 @@ class c4d_capture(c4d.plugins.CommandData):
     lat = 0.0
     lon = 0.0
     rotation = 0
-    height_offset = 4
+    height_offset = 4.0
     prefix = "drone_"
     output_folder = "."
     # инициализируются позже:
