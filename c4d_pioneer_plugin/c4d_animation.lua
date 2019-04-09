@@ -73,7 +73,7 @@ function Animation.new(points_str, colors_str)
 		if Config.lat ~= nil and Config.lon ~= nil then
 			ap.setGpsOrigin(Config.lat, Config.lon, 0)
 		end
-		Config.light_onlanding = cfg.light_onlanding or true
+		Config.light_onlanding = cfg.light_onlanding or false
 	end
 
 	function obj:eventHandler(e)
@@ -131,7 +131,7 @@ function Animation.new(points_str, colors_str)
 			Color.setInfoLEDs(0, 1, 0)
 			Timer.callAtGlobal(t_near, function () self:eventHandler(Ev.SYNC_START) end)
 		else
-			Timer.callLater(1, function () self:waitStartLoop() end)
+			Timer.callLater(0.2, function () self:waitStartLoop() end)
 		end
 	end
 
@@ -157,7 +157,7 @@ local cfg = {}
 	cfg.init_index = 1
 	cfg.time_after_prepare = 7
 	cfg.time_after_takeoff = 8
-	cfg.light_onlanding = true
+	cfg.light_onlanding = false
 
 anim = Animation.new(points, _)
 anim.setConfig(cfg)
