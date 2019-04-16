@@ -1,10 +1,9 @@
-
 -- Testing stuff
 -- require "c4d_test"
 
 local Animation = {}
 
-function Animation.new(points_str, colors_str)
+function Animation.new(points_str)
 
 	local strUnpack = string.unpack
 	local fromHSV = fromHSV
@@ -16,18 +15,9 @@ function Animation.new(points_str, colors_str)
 	end
 
 	local Color = {}
-		Color.colors_str_size = string.packsize(str_format)
-		Color.colors_str = points_str	-- TODO: colors string
 		Color.first_led = 4
 		Color.last_led = 28
 		Color.leds = Ledbar.new(29)
-	
-	function Color.getColor(index)
-		local t, _, _, _, h, s, v, _ = strUnpack(str_format, Color.colors_str, 1 + (index - 1) * Color.colors_str_size)
-		local r, g, b = fromHSV(h, s, v)
-		t = t / 100
-		return t, r, g, b
-	end
 
 	function Color.setAllLEDs(r, g, b)
 		for i = 0, Color.last_led, 1 do
@@ -41,25 +31,28 @@ function Animation.new(points_str, colors_str)
 		end
 	end
 
+	local Coord = {}
+		Coord.setCoord = ap.goToLocalPoint
+
 	local Point = {}
 		Point.points_str_size = string.packsize(str_format)
 		Point.points_str = points_str
-		Point.setPoint = ap.goToLocalPoint
 
 	function Point.getPoint(index)
-		local t, x, y, z = strUnpack(str_format, Point.points_str, 1 + (index - 1) * Point.points_str_size)
+		local t, x, y, z, h, s, v = strUnpack(str_format, Point.points_str, 1 + (index - 1) * Point.points_str_size)
+		local r, g, b = fromHSV(h, s, v)
 		t = t / 100
 		x = x / 100
 		y = y / 100
 		z = z / 100
-		return t, x, y, z
+		return {t, x, y, z, r, g, b}
 	end
-
 
 	local obj = {}
 		obj.state = state.stop
 		obj.global_time_0 = 0
 		obj.t_init = 0
+		obj.point_current = {}
 
 	local Config = {}
 
@@ -92,20 +85,22 @@ function Animation.new(points_str, colors_str)
 		sleep(Config.t_after_prepare)
 		Color.setInfoLEDs(0, 0, 0)
 		ap.push(Ev.MCE_TAKEOFF) -- Takeoff altitude should be set by AP parameter
-		self.t_init = Point.getPoint(Config.init_index)
+		self.point_current = Point.getPoint(Config.init_index)
+		self.t_init = self.point_current[1]
 		Timer.callAtGlobal(self.global_time_0, 	function () self:animLoop(Config.init_index) end)
 	end
 
 	function obj:animLoop(point_index)
 	  	if self.state == state.flight and point_index < Config.last_index then
-			local _, x, y, z = Point.getPoint(point_index)
-			local _, r, g, b = Color.getColor(point_index)
-			local t = Point.getPoint(point_index + 1)
+			local x, y, z = self.point_current[2], self.point_current[3], self.point_current[4]
+			local r, g, b = self.point_current[5], self.point_current[6], self.point_current[7]
+			self.point_current = Point.getPoint(point_index + 1)
+			local t = self.point_current[1]
 			Color.setAllLEDs(r, g, b)
-			Point.setPoint(x, y, z)
+			Coord.setCoord(x, y, z)
 			Timer.callAtGlobal(self.global_time_0 + t - self.t_init, function () self:animLoop(point_index + 1) end)
 		else
-			local t = Point.getPoint(point_index)
+			local t = self.point_current[1]
 			local delay = 1
 			Timer.callAtGlobal(self.global_time_0 + t + delay - self.t_init, function () self:landing() end)
 		end
@@ -114,7 +109,7 @@ function Animation.new(points_str, colors_str)
 	function obj:landing()
 		if Config.light_onlanding == false then
 			Color.setAllLEDs(0, 0, 0)
-			Color.setInfoLEDs(0, 0, 1)
+			Color.setInfoLEDs(1, 0, 1)
 		end
 		self.state = state.landing
 		ap.push(Ev.MCE_LANDING)
@@ -138,6 +133,7 @@ function Animation.new(points_str, colors_str)
 	function obj:spin()
 		Color.setInfoLEDs(1, 0, 0)
 		self:waitStartLoop()
+		-- self:start() -- For debugging
 	end
 
 	function obj:start()
@@ -159,6 +155,6 @@ local cfg = {}
 	cfg.time_after_takeoff = 8
 	cfg.light_onlanding = false
 
-anim = Animation.new(points, _)
+anim = Animation.new(points)
 anim.setConfig(cfg)
 anim:spin()
