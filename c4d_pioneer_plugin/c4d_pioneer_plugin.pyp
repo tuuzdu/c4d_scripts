@@ -8,7 +8,6 @@ import os
 import math
 import errno
 import struct
-import socket
 import binascii
 import ConfigParser
 
@@ -39,6 +38,7 @@ res = type('res', (), dict(
     TEXT_TEMPLATE_PATH= 1010, # Подпись. Выбор файла шаблона
     TEXT_LAT_LON_PARTIAL=1011,
     TEXT_MAX_VELOCITY = 1012,
+    TEXT_MIN_DISTANCE = 1013,
     
     
     # This is the ID for the group that contains the task widgets.
@@ -64,6 +64,7 @@ res = type('res', (), dict(
     EDIT_LAT = 4011,
     EDIT_LON = 4012,
     EDIT_MAX_VELOCITY = 4013, # Максимальная скорость при проверке объектов
+    EDIT_MIN_DISTANCE = 4014, # Минимальная дистанция между дронами при проверке
     
     CHECKBOX_GLOBAL_SCALE = 5000, #Чекбокс, регулирующий редактирование глобального масштаба
     
@@ -79,6 +80,7 @@ res = type('res', (), dict(
     STR_CFG_HEIGHT_OFFSET = "HeightOffset",
     STR_CFG_OBJECT_COUNT = "ObjectCount",
     STR_CFG_MAX_VELOCITY = "MaxVelocity",
+    STR_CFG_MIN_DISTANCE = "MinDistance",
     STR_CFG_ROTATION = "Rotation",
     STR_CFG_TEMPLATE_PATH = "TemplatePath",
     STR_CFG_OUTPUT_FOLDER = "OutputFolder",
@@ -123,6 +125,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET, self.GetString(res.EDIT_HEIGHT_OFFSET))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT, self.GetInt32(res.EDIT_OBJECT_COUNT))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY, self.GetString(res.EDIT_MAX_VELOCITY))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_MIN_DISTANCE, self.GetString(res.EDIT_MIN_DISTANCE))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_ROTATION, self.GetInt32(res.EDIT_ROTATION))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH, self.GetString(res.EDIT_TEMPLATE_PATH))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER, self.GetString(res.EDIT_OUTPUT_FOLDER))
@@ -158,6 +161,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.SetString(res.EDIT_OUTPUT_FOLDER, Config.get(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER))
         self.SetString(res.EDIT_TEMPLATE_PATH, Config.get(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH))
         self.SetString(res.EDIT_MAX_VELOCITY, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY))
+        self.SetString(res.EDIT_MIN_DISTANCE, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_MIN_DISTANCE))
         self.SetString(res.EDIT_HEIGHT_OFFSET, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET))
         self.SetInt32(res.EDIT_ROTATION, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_ROTATION), min = 0, max = 360)
         self.SetInt32(res.EDIT_OBJECT_COUNT, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT), min = 1)
@@ -251,8 +255,15 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_MAX_VELOCITY, "Max velocity check (0 for uncheck; m/s):")
 
-        edit_max_velocity = self.AddEditNumberArrows(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         # Конец раздела Max velocity
+
+        # Раздел Min distance
+        self.AddStaticText(res.TEXT_MIN_DISTANCE, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_MIN_DISTANCE, "Min distance check (0 for uncheck; m):")
+
+        edit_min_distance = self.AddEditText(res.EDIT_MIN_DISTANCE, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        # Конец раздела Min distance
         
         # Раздел Template path
         self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
@@ -332,6 +343,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 lat = float(self.GetString(res.EDIT_LAT))
                 lon = float(self.GetString(res.EDIT_LON))
                 max_velocity = float(self.GetString(res.EDIT_MAX_VELOCITY))
+                min_distance = float(self.GetString(res.EDIT_MIN_DISTANCE))
                 height_offset = float(self.GetString(res.EDIT_HEIGHT_OFFSET))
             except:
                 error_string = error_string + 'Invalid floating point number\n'
@@ -370,11 +382,11 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 self.plugin.rotation = rotation
                 self.plugin.object_count = object_count
                 self.plugin.max_velocity = max_velocity
+                self.plugin.min_distance = min_distance
                 self.plugin.template_path = template_path
                 self.plugin.output_folder = output_folder
                 self.plugin.main() # наконец вызываем долгожданный метод
                 self.plugin.createLuaScripts() # ну, и ещё один, в один не уложились :)
-                self.plugin.uploadScriptToPioneerStation() # загрузку в PioneerStation стоит вынести на отдельную кнопку (?)
                 return True
 
         return False
@@ -456,9 +468,6 @@ class c4d_capture(c4d.plugins.CommandData):
         for indexName in range(self.object_count):
             name = self.prefix + "{0:d}".format(indexName)
             names.append(name)
-            if name == activeObjectName:
-                self.drone_index = indexName # запоминаем имя активного дрона
-                print("Current drone #" + str(indexName))
             
         return names
 
@@ -489,35 +498,6 @@ class c4d_capture(c4d.plugins.CommandData):
         except AttributeError:
             return None
     
-    def uploadScriptToPioneerStation(self):
-        if self.drone_index is None:
-            return
-        # автоматически подгружаем скрипт в PioneerStation, если удастся
-        objNames = self.getNames()
-        print("Autoloading script #" + str(self.drone_index))
-        f = open (self.getLuaFolder() + objNames[self.drone_index] + ".lua", "rb")
-
-        sock = socket.socket()
-        try:
-            sock.connect(('127.0.0.1', 8080))
-        except:
-            print("No pioneer station network service found.")
-            return
-        header = 'POST /pioneer/v0.1/upload HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length: {0}\r\nConnection: Keep-Alive\r\nAccept-Encoding: gzip, deflate\r\nAccept-Language: ru-RU,en,*\r\nUser-Agent: Mozilla/5.0\r\nHost: 127.0.0.1:8080\r\n\r\n'
-
-        source_code = f.read()
-
-        header = header.format(str(len(source_code))).encode('ascii')
-
-        sock.send(header)
-        sock.send(source_code)
-
-        resp = sock.recv(1024)
-        print(resp)
-
-        sock.close()
-        
-
     def main(self):
         doc = documents.GetActiveDocument()
         self.doc = doc
@@ -589,7 +569,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 vel = (vel / self.time_step) / 100
                 # print vel
                 if vel > self.max_velocity and self.max_velocity > 0:
-                    gui.MessageDialog("Object's velocity ({0:s}) more than {1} m/s. Time is {2}".format(obj.GetName(), self.max_velocity, time))
+                    gui.MessageDialog("Object's velocity ({0:s}) more than {1} m/s. Time is {2} ({3} frame)".format(obj.GetName(), self.max_velocity, time, time*fps))
                     return
 
                 s = struct.pack(self.STRUCT_FORMAT,
@@ -604,19 +584,25 @@ class c4d_capture(c4d.plugins.CommandData):
                 s_xhex = binascii.hexlify(s)
                 points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
                 counter += 1
-            n = len(prev_vecPosition)
-            for j in range(n):
-                for k in range(n):
-                    x1 = prev_vecPosition[j].x
-                    y1 = prev_vecPosition[j].y
-                    z1 = prev_vecPosition[j].z
-                    x2 = prev_vecPosition[k].x
-                    y2 = prev_vecPosition[k].y
-                    z2 = prev_vecPosition[k].z
-                    distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
-                    if j != k and distance < 298:
-                        print "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance/100, time, time*fps)
+
+            # Check distance
+            if self.min_distance > 0:
+                n = len(prev_vecPosition)
+                collision_count = 0
+                for j in range(n-1):
+                    for k in range(j+1, n):
+                        x1 = prev_vecPosition[j].x
+                        y1 = prev_vecPosition[j].y
+                        z1 = prev_vecPosition[j].z
+                        x2 = prev_vecPosition[k].x
+                        y2 = prev_vecPosition[k].y
+                        z2 = prev_vecPosition[k].z
+                        distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
+                        if distance < self.min_distance:
+                            collision_count += 1
+                            print "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance, time, time*fps)
             time += self.time_step
+        print "Number of collisions: {}".format(collision_count)
 
         if not os.path.exists(os.path.dirname(self.getPointsFolder())):
             try:
