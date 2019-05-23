@@ -526,6 +526,8 @@ class c4d_capture(c4d.plugins.CommandData):
         time = 0
         points_array = []
 
+        fps = doc.GetFps()
+
         shot_time = c4d.BaseTime(time)
         doc.SetTime(shot_time)
         c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)
@@ -602,6 +604,18 @@ class c4d_capture(c4d.plugins.CommandData):
                 s_xhex = binascii.hexlify(s)
                 points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
                 counter += 1
+            n = len(prev_vecPosition)
+            for j in range(n):
+                for k in range(n):
+                    x1 = prev_vecPosition[j].x
+                    y1 = prev_vecPosition[j].y
+                    z1 = prev_vecPosition[j].z
+                    x2 = prev_vecPosition[k].x
+                    y2 = prev_vecPosition[k].y
+                    z2 = prev_vecPosition[k].z
+                    distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
+                    if j != k and distance < 298:
+                        print "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance/100, time, time*fps)
             time += self.time_step
 
         if not os.path.exists(os.path.dirname(self.getPointsFolder())):
@@ -627,7 +641,7 @@ local origin_lon = {3:f}
     --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, h, s, v))
 --end """.format(int((time - self.time_step)/self.time_step), self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
-        gui.MessageDialog("Files generated!")
+        gui.MessageDialog("Files are generated!\n\nPlease, check collisions in console output!!!\nMain menu->Script->Console")
 
     def createLuaScripts (self):
         objNames = self.getNames()
