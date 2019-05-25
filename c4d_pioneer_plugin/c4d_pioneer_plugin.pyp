@@ -445,7 +445,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
         return c4d.plugins.RegisterCommandPlugin(
                 PLUGIN_ID,                   # The Plugin ID, obviously
-                "Pioneer capture",  # The name of the plugin
+                "Geoscan Drone Air Show",  # The name of the plugin
                 c4d.PLUGINFLAG_COMMAND_HOTKEY,    # Sort of options
                 ico,                        # Icon, Geoscan here
                 help_string,                 # The help text for the command
@@ -572,7 +572,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 vel = (vel / self.time_step) / 100
                 # print vel
                 if vel > self.max_velocity and self.max_velocity > 0:
-                    s = "Velocity of\t{:03d}\tgreater than {:.2f} m/s\tTime: {} s\tFrame: {}".format(counter, self.max_velocity, time, int(time*fps))
+                    s = "Velocity of\t{:03d}\tis\t{:.2f} m/s\tTime: {} s\tFrame: {}".format(counter, vel, time, int(time*fps))
                     velocities_array.append(s)
 
                 s = struct.pack(self.STRUCT_FORMAT,
