@@ -501,8 +501,9 @@ class c4d_capture(c4d.plugins.CommandData):
     def main(self):
         doc = documents.GetActiveDocument()
         self.doc = doc
-        maxTime = doc.GetMaxTime().Get()
-        maxTime = (maxTime // self.time_step + 2) * self.time_step
+        max_time = doc.Getmax_time().Get()
+        max_time = (max_time // self.time_step + 2) * self.time_step
+        max_points = int((max_time - self.time_step)/self.time_step)
         time = 0
         points_array = []
 
@@ -521,11 +522,12 @@ class c4d_capture(c4d.plugins.CommandData):
 
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
+                '-- Maximum number of points is {1}'\
                 '-- [time]=cs, [x][y][z]=cm, [h] = 0-360 [s][v]=0-100\n'\
-                'local points  =  "'.format(self.time_step, self.object_count, self.STRUCT_FORMAT)
+                'local points  =  "'.format(self.time_step, max_points)
             points_array.append([s])
 
-        while time <= maxTime:
+        while time <= max_time:
             shot_time = c4d.BaseTime(time)
             doc.SetTime(shot_time)
             c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)
@@ -584,8 +586,9 @@ class c4d_capture(c4d.plugins.CommandData):
                                                 int(vecHSV.y * 100), #B
                                                 int(vecHSV.z * 100)) #B
                 # print s
-                s_xhex = binascii.hexlify(s)
-                points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
+                if vecPosition.y > self.height_offset: # append if altitude greater than 0 in animation
+                    s_xhex = binascii.hexlify(s)
+                    points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
                 counter += 1
 
             # Check distance
@@ -612,12 +615,14 @@ class c4d_capture(c4d.plugins.CommandData):
         print "\n"
         for s in velocities_array:
             print s
-        print "\nTOTAL NUMBER OF COLLISIONS: {}".format(len(collisions_array))
-        print "\nTOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(velocities_array))
+        msg_collision = "\nTOTAL NUMBER OF COLLISIONS: {}".format(len(collisions_array))
+        msg_velocities = "\nTOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(velocities_array))
+        print msg_collision
+        print msg_velocities
         if len(collisions_array) > 0:
-            gui.MessageDialog("TOTAL NUMBER OF COLLISIONS: {}".format(len(collisions_array)))
+            gui.MessageDialog(msg_collision)
         if len(velocities_array) > 0:
-            gui.MessageDialog("TOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(velocities_array)))
+            gui.MessageDialog(msg_velocities)
 
         if not os.path.exists(os.path.dirname(self.getPointsFolder())):
             try:
@@ -640,7 +645,7 @@ local origin_lon = {3:f}
 --for n = 0, {0:d} do
     --t, x, y, z, h, s, v, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
     --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, h, s, v))
---end """.format(int((time - self.time_step)/self.time_step), self.STRUCT_FORMAT, self.lat, self.lon)
+--end """.format(len(points_array[i]), self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
         gui.MessageDialog("Files are generated!\n\nPlease, check collisions in console output!!!\nMain menu->Script->Console")
 

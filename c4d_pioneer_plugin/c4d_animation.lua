@@ -83,9 +83,12 @@ function Animation.new(points_str)
 	function obj:eventHandler(e)
 		if self.state ~= state.stop then
 			if e == Ev.SYNC_START then
-				self.global_time_0 = getGlobalTime() + Config.t_after_prepare + Config.t_after_takeoff
+				local t = Config.t_after_prepare + Config.t_after_takeoff
+				self.point_current = Point.getPoint(Config.init_index)
+				self.t_init = self.point_current[1]
+				self.global_time_0 = getGlobalTime() + self.t_init + t
 				Color.setInfoLEDs(tblUnpack(Color.colors.blue))
-				self:animInit()
+				Timer.callAtGlobal(self.global_time_0 - t, function () self:animInit() end)
 			end
 			if (e == Ev.CONTROL_FAIL or e == Ev.ENGINE_FAIL or e == Ev.SHOCK or e == Ev.COPTER_DISARMED) then
 				self.state = state.stop
@@ -101,9 +104,7 @@ function Animation.new(points_str)
 		sleep(Config.t_after_prepare)
 		Color.setInfoLEDs(tblUnpack(Color.colors.black))
 		ap.push(Ev.MCE_TAKEOFF) -- Takeoff altitude should be set by AP parameter
-		self.point_current = Point.getPoint(Config.init_index)
-		self.t_init = self.point_current[1]
-		Timer.callAtGlobal(self.global_time_0, 	function () self:animLoop(Config.init_index) end)
+		Timer.callAtGlobal(self.global_time_0, function () self:animLoop(Config.init_index) end)
 	end
 
 	function obj:animLoop(point_index)
