@@ -101,7 +101,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
 
     def Refresh(self, flush=True, force=False, initial=False, reload_=False):
         current_doc = c4d.documents.GetActiveDocument()
-        title_text = 'Todo In: %s' % current_doc.GetDocumentName()
+        title_text = "Project's name: %s" % current_doc.GetDocumentName()
         self.SetString(res.TEXT_DOCINFO, title_text)
     
     # функция для сохранения настроек в конфигурационном файле
@@ -167,7 +167,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.SetInt32(res.EDIT_OBJECT_COUNT, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT), min = 1)
 
     def CreateLayout(self):
-        self.SetTitle('Export to Pioneer Station')
+        self.SetTitle('Geoscan Drone Air Show')
         
         # Layout flag that will cause the widget to be scaled as much
         # possible in horizontal and vertical direction.
@@ -506,6 +506,9 @@ class c4d_capture(c4d.plugins.CommandData):
         time = 0
         points_array = []
 
+        collisions_array = []
+        velocities_array = []
+
         fps = doc.GetFps()
 
         shot_time = c4d.BaseTime(time)
@@ -569,8 +572,8 @@ class c4d_capture(c4d.plugins.CommandData):
                 vel = (vel / self.time_step) / 100
                 # print vel
                 if vel > self.max_velocity and self.max_velocity > 0:
-                    gui.MessageDialog("Object's velocity ({0:s}) more than {1} m/s. Time is {2} ({3} frame)".format(obj.GetName(), self.max_velocity, time, time*fps))
-                    return
+                    s = "Velocity of\t{:03d}\tgreater than {:.2f} m/s\tTime: {} s\tFrame: {}".format(counter, self.max_velocity, time, int(time*fps))
+                    velocities_array.append(s)
 
                 s = struct.pack(self.STRUCT_FORMAT,
                                                 int(time * 100),   #H
@@ -588,7 +591,6 @@ class c4d_capture(c4d.plugins.CommandData):
             # Check distance
             if self.min_distance > 0:
                 n = len(prev_vecPosition)
-                collision_count = 0
                 for j in range(n-1):
                     for k in range(j+1, n):
                         x1 = prev_vecPosition[j].x
@@ -599,10 +601,23 @@ class c4d_capture(c4d.plugins.CommandData):
                         z2 = prev_vecPosition[k].z
                         distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
                         if distance < self.min_distance:
-                            collision_count += 1
-                            print "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance, time, time*fps)
+                            collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance, time, int(time*fps))
+                            collisions_array.append(collision_str)
             time += self.time_step
-        print "Number of collisions: {}".format(collision_count)
+
+        # Console check report
+        print "\n"
+        for s in collisions_array:
+            print s
+        print "\n"
+        for s in velocities_array:
+            print s
+        print "\nTOTAL NUMBER OF COLLISIONS: {}".format(len(collisions_array))
+        print "\nTOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(velocities_array))
+        if len(collisions_array) > 0:
+            gui.MessageDialog("TOTAL NUMBER OF COLLISIONS: {}".format(len(collisions_array)))
+        if len(velocities_array) > 0:
+            gui.MessageDialog("TOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(velocities_array)))
 
         if not os.path.exists(os.path.dirname(self.getPointsFolder())):
             try:
