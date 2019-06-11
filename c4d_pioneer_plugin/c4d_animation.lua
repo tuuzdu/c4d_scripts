@@ -168,8 +168,8 @@ end
 
 local cfg = {}
 	cfg.init_index = 1
-	cfg.time_after_prepare = 7
-	cfg.time_after_takeoff = 8
+	cfg.time_after_prepare = 8
+	cfg.time_after_takeoff = 7
 	cfg.light_onlanding = false
 
 anim = Animation.new(points)
