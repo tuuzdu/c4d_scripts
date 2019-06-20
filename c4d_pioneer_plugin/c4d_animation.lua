@@ -9,7 +9,7 @@ function Animation.new(points_str)
 	local tblUnpack = table.unpack
 	local fromHSV = fromHSV
 
-	local state = {stop = 0, idle = 1, flight = 2}
+	local state = {stop = 0, idle = 1, flight = 2, landing = 3, test = 4}
 	
 	local function getGlobalTime()
 		return time() + deltaTime()
@@ -78,22 +78,35 @@ function Animation.new(points_str)
 			ap.setGpsOrigin(Config.lat, Config.lon, 0)
 		end
 		Config.light_onlanding = cfg.light_onlanding or false
+		Config.edge_marker = cfg.edge_marker or false
 	end
 
 	function obj:eventHandler(e)
 		if self.state ~= state.stop then
-			if e == Ev.SYNC_START then
-				local t = Config.t_after_prepare + Config.t_after_takeoff
-				self.point_current = Point.getPoint(Config.init_index)
-				self.t_init = self.point_current[1]
-				self.global_time_0 = getGlobalTime() + self.t_init + t
-				Color.setInfoLEDs(tblUnpack(Color.colors.blue))
-				Timer.callAtGlobal(self.global_time_0 - t, function () self:animInit() end)
-			end
 			if (e == Ev.CONTROL_FAIL or e == Ev.ENGINE_FAIL or e == Ev.SHOCK or e == Ev.COPTER_DISARMED) then
 				self.state = state.stop
 				Color.setAllLEDs(tblUnpack(Color.colors.black))
 				Timer.callLater(Config.t_leds_after_fail, function () Color.setInfoLEDs(tblUnpack(Color.colors.yellow)) end)
+			end
+
+			if Config.edge_marker then -- Takeoff and flight of corner drones for mark edges of start formation
+				if e == Ev.SYNC_START then
+					Color.setInfoLEDs(tblUnpack(Color.colors.blue))
+					self:startEdgeMarker()
+				end
+				if e == Ev.POINT_REACHED then
+					sleep(5)
+					ap.push(Ev.MCE_LANDING)
+				end
+			else
+				if e == Ev.SYNC_START then
+					local t = Config.t_after_prepare + Config.t_after_takeoff
+					self.point_current = Point.getPoint(Config.init_index)
+					self.t_init = self.point_current[1]
+					self.global_time_0 = getGlobalTime() + self.t_init + t
+					Color.setInfoLEDs(tblUnpack(Color.colors.blue))
+					Timer.callAtGlobal(self.global_time_0 - t, function () self:animInit() end)
+				end
 			end
 		end
 	end
@@ -135,10 +148,9 @@ function Animation.new(points_str)
 	function obj:waitStartLoop()
 		local _,_,_,_,_,_,_,ch8 = Sensors.rc()
 		if ch8 > 0 then 
-			self.state = state.idle
 			local t = getGlobalTime()
 			local leap_second = 19
-			local t_period = 15 -- time window
+			local t_period = 15 -- Time window
 			local t_near = leap_second + t_period*(math.floor((t - leap_second)/t_period) + 1)
 			Color.setInfoLEDs(tblUnpack(Color.colors.green))
 			Timer.callAtGlobal(t_near, function () self:eventHandler(Ev.SYNC_START) end)
@@ -148,13 +160,25 @@ function Animation.new(points_str)
 	end
 
 	function obj:spin()
+		self.state = state.idle
 		Color.setInfoLEDs(tblUnpack(Color.colors.red))
 		self:waitStartLoop()
-		-- self:start() -- For debugging
+		-- self:startTest() -- For debugging
 	end
 
-	function obj:start()
-		self.state = state.idle
+	function obj:startEdgeMarker()
+		self.point_current = Point.getPoint(Config.init_index)
+		local x, y, z = self.point_current[2], self.point_current[3], self.point_current[4]
+		ap.push(Ev.MCE_PREFLIGHT)
+		sleep(Config.t_after_prepare)
+		Color.setAllLEDs(tblUnpack(Color.colors.green))
+		ap.push(Ev.MCE_TAKEOFF)
+		sleep(Config.t_after_takeoff)
+		Color.setAllLEDs(tblUnpack(Color.colors.red))
+		Position.setPosition(x, y, z)
+	end
+
+	function obj:startTest()
 		self:eventHandler(Ev.SYNC_START)
 	end
 
@@ -171,6 +195,7 @@ local cfg = {}
 	cfg.time_after_prepare = 8
 	cfg.time_after_takeoff = 7
 	cfg.light_onlanding = false
+	cfg.edge_marker = false
 
 anim = Animation.new(points)
 anim.setConfig(cfg)

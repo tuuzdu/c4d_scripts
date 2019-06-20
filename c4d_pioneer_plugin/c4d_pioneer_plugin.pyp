@@ -645,7 +645,7 @@ local origin_lon = {3:f}
 --for n = 0, {0:d} do
     --t, x, y, z, h, s, v, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
     --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, h, s, v))
---end """.format(len(points_array[i])-2, self.STRUCT_FORMAT, self.lat, self.lon)
+--end\n""".format(len(points_array[i])-2, self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
         gui.MessageDialog("Files are generated!\n\nPlease, check collisions in console output!!!\nMain menu->Script->Console")
 
