@@ -109,7 +109,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         filename = c4d.storage.LoadDialog(title="Choose template file", flags = c4d.FILESELECT_SAVE, def_path=self.plugin.module_path, def_file="config.ini")
         if filename is None:
             return
-        cfgfile = open(filename+'.ini', 'w')
+        cfgfile = open(filename, 'w')
 
         # add the settings to the structure of the file, and lets write it out...
         Config = ConfigParser.ConfigParser()
