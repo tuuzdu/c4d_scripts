@@ -424,7 +424,7 @@ class c4d_capture(c4d.plugins.CommandData):
     template_path = None
     drone_index = None # динамическая переменная с определением активного робота
     
-    STRUCT_FORMAT = "HhhHHBB" # единственная константа, которая не будет изменяться
+    STRUCT_FORMAT = "HhhHBBB" # единственная константа, которая не будет изменяться
     FOLDER_NAME = "./points/"
     LUA_FOLDER_NAME = "./scripts/"
     
@@ -523,7 +523,7 @@ class c4d_capture(c4d.plugins.CommandData):
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
                 '-- Maximum number of points is {1}\n'\
-                '-- [time]=cs, [x][y][z]=cm, [h] = 0-360 [s][v]=0-100\n'\
+                '-- [time]=cs, [x][y][z]=cm, [r][g][b]=0-100\n'\
                 'local points  =  "'.format(self.time_step, max_points)
             points_array.append([s])
 
@@ -541,14 +541,6 @@ class c4d_capture(c4d.plugins.CommandData):
                     gui.MessageDialog("Didn't find object's ({0:s}) tag \"Material\"".format(obj.GetName()))
                     return
                 vecRGB = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR) # получаем RGB
-                # это ненормированный вектор RGB, исправляем ситуацию. Норма подразумевается равномерной
-                intensity = max(vecRGB.x, vecRGB.y, vecRGB.z)
-                vecRGB = vecRGB / intensity
-                vecHSV = c4d.utils.RGBToHSV(vecRGB) # конвертируем RGB в HSV. Все значения в интервале [0, 1]
-                # домножаем также на intensity текущий цвет. Разработчики сцен смогут повлиять на яркость коптера
-                vecHSV.z = vecHSV.z * intensity
-                if (int(vecHSV.z * 100) > 255): # верхний предел для того, чтобы всё влезло в байт
-                    vecHSV.z = 2.55
                     
                 #Get position
                 vecPosition = obj.GetAbsPos()
@@ -582,9 +574,9 @@ class c4d_capture(c4d.plugins.CommandData):
                                                 int(vecPosition.x), #h
                                                 int(vecPosition.z), #h
                                                 int(vecPosition.y), #H
-                                                int(vecHSV.x * 360), #H
-                                                int(vecHSV.y * 100), #B
-                                                int(vecHSV.z * 100)) #B
+                                                int(vecRGB.x * 100), #B
+                                                int(vecRGB.y * 100), #B
+                                                int(vecRGB.z * 100)) #B
                 # print s
                 if int(vecPosition.y) > self.height_offset: # append if altitude greater than 0 in animation
                     s_xhex = binascii.hexlify(s)
@@ -641,10 +633,10 @@ local points_count = {0:d}
 local str_format = \"{1:s}\"
 local origin_lat = {2:f}
 local origin_lon = {3:f}
---print ("t, s:\tx, m:\ty, m:\tz, m:\th, 360deg:\ts, byte:\tv, byte:")
+--print ("t, s:\tx, m:\ty, m:\tz, m:\tr, byte:\tg, byte:\tb, byte:")
 --for n = 0, {0:d} do
-    --t, x, y, z, h, s, v, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
-    --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, h, s, v))
+    --t, x, y, z, r, g, b, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
+    --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, r/100, g/100, b/100))
 --end\n""".format(len(points_array[i])-2, self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
         gui.MessageDialog("Files are generated!\n\nPlease, check collisions in console output!!!\nMain menu->Script->Console")

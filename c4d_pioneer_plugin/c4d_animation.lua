@@ -7,7 +7,6 @@ function Animation.new(points_str)
 
 	local strUnpack = string.unpack
 	local tblUnpack = table.unpack
-	local fromHSV = fromHSV
 
 	local state = {stop = 0, idle = 1, flight = 2, landing = 3, test = 4}
 	
@@ -49,9 +48,11 @@ function Animation.new(points_str)
 		Point.points_str = points_str
 
 	function Point.getPoint(index)
-		local t, x, y, z, h, s, v = strUnpack(str_format, Point.points_str, 1 + (index - 1) * Point.points_str_size)
-		local r, g, b = fromHSV(h, s, v)
+		local t, x, y, z, r, g, b = strUnpack(str_format, Point.points_str, 1 + (index - 1) * Point.points_str_size)
 		t = t / 100
+		r = r / 100
+		g = g / 100
+		b = b / 100
 		x = x / 100
 		y = y / 100
 		z = z / 100
