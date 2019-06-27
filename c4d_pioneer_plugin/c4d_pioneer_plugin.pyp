@@ -464,9 +464,9 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def getNames (self):
         names = []
-        activeObjectName = self.getActiveObjectName()
+        # activeObjectName = self.getActiveObjectName()
         for indexName in range(self.object_count):
-            name = self.prefix + "{0:d}".format(indexName)
+            name = self.prefix + "{0:d}".format(indexName + 1) # Count from 1 in animation objects
             names.append(name)
             
         return names
