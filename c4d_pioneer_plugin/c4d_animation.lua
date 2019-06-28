@@ -50,9 +50,9 @@ function Animation.new(points_str)
 	function Point.getPoint(index)
 		local t, x, y, z, r, g, b = strUnpack(str_format, Point.points_str, 1 + (index - 1) * Point.points_str_size)
 		t = t / 100
-		r = r / 100
-		g = g / 100
-		b = b / 100
+		r = r / 255
+		g = g / 255
+		b = b / 255
 		x = x / 100
 		y = y / 100
 		z = z / 100
@@ -96,7 +96,7 @@ function Animation.new(points_str)
 					self:startEdgeMarker()
 				end
 				if e == Ev.POINT_REACHED then
-					sleep(5)
+					sleep(30) -- For better RTK positioning
 					ap.push(Ev.MCE_LANDING)
 				end
 			else

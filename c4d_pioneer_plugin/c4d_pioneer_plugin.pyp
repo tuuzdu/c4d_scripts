@@ -523,7 +523,7 @@ class c4d_capture(c4d.plugins.CommandData):
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
                 '-- Maximum number of points is {1}\n'\
-                '-- [time]=cs, [x][y][z]=cm, [r][g][b]=0-100\n'\
+                '-- [time]=cs, [x][y][z]=cm, [r][g][b]=0-255\n'\
                 'local points  =  "'.format(self.time_step, max_points)
             points_array.append([s])
 
@@ -574,9 +574,9 @@ class c4d_capture(c4d.plugins.CommandData):
                                                 int(vecPosition.x), #h
                                                 int(vecPosition.z), #h
                                                 int(vecPosition.y), #H
-                                                int(vecRGB.x * 100), #B
-                                                int(vecRGB.y * 100), #B
-                                                int(vecRGB.z * 100)) #B
+                                                int(vecRGB.x * 255), #B
+                                                int(vecRGB.y * 255), #B
+                                                int(vecRGB.z * 255)) #B
                 # print s
                 if int(vecPosition.y) > self.height_offset: # append if altitude greater than 0 in animation
                     s_xhex = binascii.hexlify(s)
@@ -636,7 +636,7 @@ local origin_lon = {3:f}
 --print ("t, s:\tx, m:\ty, m:\tz, m:\tr, byte:\tg, byte:\tb, byte:")
 --for n = 0, {0:d} do
     --t, x, y, z, r, g, b, _ = string.unpack(str_format, points, 1 + n * string.packsize(str_format))
-    --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, r/100, g/100, b/100))
+    --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, r/255, g/255, b/255))
 --end\n""".format(len(points_array[i])-2, self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
         gui.MessageDialog("Files are generated!\n\nPlease, check collisions in console output!!!\nMain menu->Script->Console")
