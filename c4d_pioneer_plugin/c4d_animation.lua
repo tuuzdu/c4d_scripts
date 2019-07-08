@@ -91,7 +91,7 @@ function Animation.new(points_str)
 			end
 
 			if Config.edge_marker then -- Takeoff and flight of corner drones for mark edges of start formation
-				if e == Ev.SYNC_START then
+				if e == Ev.SYNC_START and self.state == state.idle then
 					Color.setInfoLEDs(tblUnpack(Color.colors.blue))
 					self:startEdgeMarker()
 				end
@@ -100,7 +100,8 @@ function Animation.new(points_str)
 					ap.push(Ev.MCE_LANDING)
 				end
 			else
-				if e == Ev.SYNC_START then
+				if e == Ev.SYNC_START and self.state == state.idle then
+					logEnable(true)
 					local t = Config.t_after_prepare + Config.t_after_takeoff
 					self.point_current = Point.getPoint(Config.init_index)
 					self.t_init = self.point_current[1]
