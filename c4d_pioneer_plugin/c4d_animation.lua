@@ -61,6 +61,7 @@ function Animation.new(points_str)
 
 	local obj = {}
 		obj.state = state.stop
+		obj.armed = false
 		obj.global_time_0 = 0
 		obj.t_init = 0
 		obj.point_current = {}
@@ -84,10 +85,14 @@ function Animation.new(points_str)
 
 	function obj:eventHandler(e)
 		if self.state ~= state.stop then
-			if (e == Ev.CONTROL_FAIL or e == Ev.ENGINE_FAIL or e == Ev.SHOCK or e == Ev.COPTER_DISARMED) then
+			if (e == Ev.CONTROL_FAIL or e == Ev.ENGINE_FAIL or e == Ev.SHOCK or e == Ev.COPTER_DISARMED or e == Ev.LOW_VOLTAGE2) then
 				self.state = state.stop
 				Color.setAllLEDs(tblUnpack(Color.colors.black))
 				Timer.callLater(Config.t_leds_after_fail, function () Color.setInfoLEDs(tblUnpack(Color.colors.yellow)) end)
+			end
+
+			if e == Ev.ENGINES_STARTED then
+				self.armed = true
 			end
 
 			if Config.edge_marker then -- Takeoff and flight of corner drones for mark edges of start formation
@@ -101,13 +106,14 @@ function Animation.new(points_str)
 				end
 			else
 				if e == Ev.SYNC_START and self.state == state.idle then
-					logEnable(true)
 					local t = Config.t_after_prepare + Config.t_after_takeoff
 					self.point_current = Point.getPoint(Config.init_index)
 					self.t_init = self.point_current[1]
 					self.global_time_0 = getGlobalTime() + self.t_init + t
 					Color.setInfoLEDs(tblUnpack(Color.colors.blue))
 					Timer.callAtGlobal(self.global_time_0 - t, function () self:animInit() end)
+					logEnable(true)
+					Timer.callLater(10 + self.t_init + Config.t_after_takeoff, function () if self.armed == false then logEnable(false) end end)
 				end
 			end
 		end
