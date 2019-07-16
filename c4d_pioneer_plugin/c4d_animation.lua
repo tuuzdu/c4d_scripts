@@ -91,7 +91,7 @@ function Animation.new(points_str)
 				Timer.callLater(Config.t_leds_after_fail, function () Color.setInfoLEDs(tblUnpack(Color.colors.yellow)) end)
 			end
 
-			if e == Ev.ENGINES_STARTED then
+			if e == Ev.ENGINES_STARTED and self.state == state.flight then
 				self.armed = true
 			end
 

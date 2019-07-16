@@ -424,7 +424,7 @@ class c4d_capture(c4d.plugins.CommandData):
     template_path = None
     drone_index = None # динамическая переменная с определением активного робота
     
-    STRUCT_FORMAT = "HlllBBB" # единственная константа, которая не будет изменяться
+    STRUCT_FORMAT = "HiiiBBB" # единственная константа, которая не будет изменяться
     FOLDER_NAME = "./points/"
     LUA_FOLDER_NAME = "./scripts/"
     
