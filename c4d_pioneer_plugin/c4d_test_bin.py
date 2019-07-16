@@ -14,7 +14,7 @@ for n in range(points_count):
 	data.append(struct.unpack_from(str_format, points, n * size))
 
 # print(data[10243][1])
-# print(data[3][1].to_bytes(4,  byteorder='big', signed=True))
+# print(data[3][1].to_bytes(4,  byteorder='little', signed=True))
 
 with open("points.bin", "wb") as binary_file:
 	for _ in range(100):
@@ -22,9 +22,9 @@ with open("points.bin", "wb") as binary_file:
 
 	counter = 0
 	for n in range(0, points_count, 15):
-		binary_file.write(data[n][1].to_bytes(4,  byteorder='big', signed=True))
-		binary_file.write(data[n][2].to_bytes(4,  byteorder='big', signed=True))
-		binary_file.write(data[n][3].to_bytes(4,  byteorder='big', signed=True))
+		binary_file.write(data[n][1].to_bytes(4,  byteorder='little', signed=True))
+		binary_file.write(data[n][2].to_bytes(4,  byteorder='little', signed=True))
+		binary_file.write(data[n][3].to_bytes(4,  byteorder='little', signed=True))
 		counter += 1
 	print(counter)
 	if counter < 1800:
@@ -32,6 +32,6 @@ with open("points.bin", "wb") as binary_file:
 			binary_file.write(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
 	for n in range(points_count):
-		binary_file.write(data[n][4].to_bytes(1,  byteorder='big', signed=False))
-		binary_file.write(data[n][5].to_bytes(1,  byteorder='big', signed=False))
-		binary_file.write(data[n][6].to_bytes(1,  byteorder='big', signed=False))
+		binary_file.write(data[n][4].to_bytes(1,  byteorder='little', signed=False))
+		binary_file.write(data[n][5].to_bytes(1,  byteorder='little', signed=False))
+		binary_file.write(data[n][6].to_bytes(1,  byteorder='little', signed=False))
