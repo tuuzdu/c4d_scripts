@@ -17,7 +17,24 @@ for n in range(points_count):
 # print(data[3][1].to_bytes(4,  byteorder='little', signed=True))
 
 with open("points.bin", "wb") as binary_file:
-	for _ in range(100):
+	AnimationId = 1
+	FreqCoords = 2
+	FreqColors = 30
+	FormatCoords = 4
+	FormatColors = 1
+	NumberCoords = 730
+	NumberColors = 10948
+	TimeStart = 1
+	TimeEnd = 365
+	LatOrigin = 60.002007
+	LonOrigin = 30.367607
+	AltOrigin = 0.0
+	HeaderFormat = 'BBBBBHHIIfff'
+	binary_file.write(struct.pack(HeaderFormat, AnimationId, FreqCoords, FreqColors, FormatCoords, FormatColors, NumberCoords, NumberColors, TimeStart, TimeEnd, LatOrigin, LonOrigin, AltOrigin))
+
+	size = struct.calcsize(HeaderFormat)
+	print(size)
+	for _ in range(size, 100):
 		binary_file.write(b'\x00')
 
 	counter = 0
