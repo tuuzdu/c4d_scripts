@@ -5,7 +5,7 @@ local Animation = {}
 
 function Animation.new(points_str)
 
-	local strUnpack = string.unpack
+	-- local strUnpack = string.unpack
 	local tblUnpack = table.unpack
 
 	local state = {stop = 0, idle = 1, flight = 2, landing = 3, test = 4}
@@ -16,8 +16,8 @@ function Animation.new(points_str)
 
 	local Color = {}
 		Color.first_led = 4
-		Color.last_led = 28
-		Color.leds = Ledbar.new(29)
+		Color.last_led = 5
+		Color.leds = Ledbar.new(5)
 		Color.colors = {	red = 		{1, 0, 0},
 							green = 	{0, 1, 0},
 							blue = 		{0, 0, 1},
@@ -43,41 +43,29 @@ function Animation.new(points_str)
 	local Position = {}
 		Position.setPosition = ap.goToLocalPoint
 
-	local Point = {}
-		Point.points_str_size = string.packsize(str_format)
-		Point.points_str = points_str
-
-	function Point.getPoint(index)
-		local t, x, y, z, r, g, b = strUnpack(str_format, Point.points_str, 1 + (index - 1) * Point.points_str_size)
-		t = t / 100
-		r = r / 255
-		g = g / 255
-		b = b / 255
-		x = x / 100
-		y = y / 100
-		z = z / 100
-		return {t, x, y, z, r, g, b}
-	end
-
 	local obj = {}
 		obj.state = state.stop
 		obj.armed = false
 		obj.global_time_0 = 0
-		obj.t_init = 0
-		obj.point_current = {}
+		obj.t_init = NandLua.readTimeStart()
+		obj.period_position = 1/NandLua.readFreqPositions()
+		obj.period_color = 1/NandLua.readFreqColors()
+		obj.number_positions = NandLua.readNumberPositions()
+		obj.number_colors = NandLua.readNumberColors()
+		obj.origin_lat, obj.origin_lon, obj.origin_alt = NandLua.readPositionOrigin()
 
 	local Config = {}
 
-	function obj.setConfig(cfg)
-		Config.init_index = cfg.init_index or 1
-		Config.last_index = cfg.last_index or points_count
-		Config.t_after_prepare = cfg.time_after_prepare or 7
-		Config.t_after_takeoff = cfg.time_after_takeoff or 8
+	function obj:setConfig(cfg)
+		Config.init_index = cfg.init_index or 0
+		Config.t_after_prepare = cfg.time_after_prepare or 5
+		Config.t_after_takeoff = cfg.time_after_takeoff or 5
 		Config.t_leds_after_fail = cfg.time_leds_after_fail or 30
-		Config.lat = cfg.lat or origin_lat
-		Config.lon = cfg.lon or origin_lon
-		if Config.lat ~= nil and Config.lon ~= nil then
-			ap.setGpsOrigin(Config.lat, Config.lon, 0)
+		Config.lat = cfg.lat or self.origin_lat
+		Config.lon = cfg.lon or self.origin_lon
+		Config.alt = cfg.alt or self.origin_alt
+		if Config.lat ~= nil and Config.lon ~= nil and Config.alt ~= nil then
+			ap.setGpsOrigin(Config.lat, Config.lon, Config.alt)
 		end
 		Config.light_onlanding = cfg.light_onlanding or false
 		Config.edge_marker = cfg.edge_marker or false
@@ -101,14 +89,12 @@ function Animation.new(points_str)
 					self:startEdgeMarker()
 				end
 				if e == Ev.POINT_REACHED then
-					sleep(30) -- For better RTK positioning
+					sleep(10) -- For better RTK positioning
 					ap.push(Ev.MCE_LANDING)
 				end
 			else
 				if e == Ev.SYNC_START and self.state == state.idle then
 					local t = Config.t_after_prepare + Config.t_after_takeoff
-					self.point_current = Point.getPoint(Config.init_index)
-					self.t_init = self.point_current[1]
 					self.global_time_0 = getGlobalTime() + self.t_init + t
 					Color.setInfoLEDs(tblUnpack(Color.colors.blue))
 					Timer.callAtGlobal(self.global_time_0 - t, function () self:animInit() end)
@@ -125,22 +111,26 @@ function Animation.new(points_str)
 		sleep(Config.t_after_prepare)
 		Color.setInfoLEDs(tblUnpack(Color.colors.black))
 		ap.push(Ev.MCE_TAKEOFF) -- Takeoff altitude should be set by AP parameter
-		Timer.callAtGlobal(self.global_time_0, function () self:animLoop(Config.init_index) end)
+		Timer.callAtGlobal(self.global_time_0, function () self:positionLoop(Config.init_index) end)
+		Timer.callAtGlobal(self.global_time_0, function () self:colorLoop(Config.init_index) end)
 	end
 
-	function obj:animLoop(point_index)
-	  	if self.state == state.flight and point_index < Config.last_index then
-			local x, y, z = self.point_current[2], self.point_current[3], self.point_current[4]
-			local r, g, b = self.point_current[5], self.point_current[6], self.point_current[7]
-			self.point_current = Point.getPoint(point_index + 1)
-			local t = self.point_current[1]
-			Color.setAllLEDs(r, g, b)
-			Position.setPosition(x, y, z)
-			Timer.callAtGlobal(self.global_time_0 + t - self.t_init, function () self:animLoop(point_index + 1) end)
+	function obj:positionLoop(point_index)
+		local t = (point_index + 1) * self.period_position
+		if self.state == state.flight and point_index < self.number_positions then
+			Position.setPosition(NandLua.readPosition(point_index))
+			Timer.callAtGlobal(self.global_time_0 + t, function () self:positionLoop(point_index + 1) end)
 		elseif self.state == state.flight then
-			local t = self.point_current[1]
 			local delay = 1
-			Timer.callAtGlobal(self.global_time_0 + t + delay - self.t_init, function () self:landing() end)
+			Timer.callAtGlobal(self.global_time_0 + t + delay, function () self:landing() end)
+		end
+	end
+
+	function obj:colorLoop(point_index)
+		if self.state == state.flight and point_index < self.number_colors then
+			local t = (point_index + 1) * self.period_color
+			Color.setAllLEDs(NandLua.readColor(point_index))
+			Timer.callAtGlobal(self.global_time_0 + t, function () self:colorLoop(point_index + 1) end)
 		end
 	end
 	
@@ -154,8 +144,8 @@ function Animation.new(points_str)
 	end
 
 	function obj:waitStartLoop()
-		local _,_,_,_,_,_,_,ch8 = Sensors.rc()
-		if ch8 > 0 then 
+		local _,_,_,_,_,ch6,_,ch8 = Sensors.rc() -- TODO fix channel 6
+		if ch6 < 1 and ch8 > 0 then 
 			local t = getGlobalTime()
 			local leap_second = 19
 			local t_period = 15 -- Time window
@@ -175,15 +165,13 @@ function Animation.new(points_str)
 	end
 
 	function obj:startEdgeMarker()
-		self.point_current = Point.getPoint(Config.init_index)
-		local x, y, z = self.point_current[2], self.point_current[3], self.point_current[4]
 		ap.push(Ev.MCE_PREFLIGHT)
 		sleep(Config.t_after_prepare)
 		Color.setAllLEDs(tblUnpack(Color.colors.green))
 		ap.push(Ev.MCE_TAKEOFF)
 		sleep(Config.t_after_takeoff)
 		Color.setAllLEDs(tblUnpack(Color.colors.red))
-		Position.setPosition(x, y, z)
+		Position.setPosition(NandLua.readPosition(Config.init_index))
 	end
 
 	function obj:startTest()
@@ -199,12 +187,11 @@ function callback(event)
 end
 
 local cfg = {}
-	cfg.init_index = 1
-	cfg.time_after_prepare = 8
-	cfg.time_after_takeoff = 7
+	cfg.time_after_prepare = 5
+	cfg.time_after_takeoff = 5
 	cfg.light_onlanding = false
 	cfg.edge_marker = false
 
 anim = Animation.new(points)
-anim.setConfig(cfg)
+anim:setConfig(cfg)
 anim:spin()

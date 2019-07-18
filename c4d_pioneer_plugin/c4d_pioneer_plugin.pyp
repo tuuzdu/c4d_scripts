@@ -424,15 +424,19 @@ class c4d_capture(c4d.plugins.CommandData):
     template_path = None
     drone_index = None # динамическая переменная с определением активного робота
     
-    STRUCT_FORMAT = "HiiiBBB" # единственная константа, которая не будет изменяться
+    STRUCT_FORMAT = "HhhHBBB" # единственная константа, которая не будет изменяться
     FOLDER_NAME = "./points/"
     LUA_FOLDER_NAME = "./scripts/"
+    BIN_FOLDER_NAME = "./bins/"
     
     def getPointsFolder(self):
         return os.path.dirname(self.output_folder + self.FOLDER_NAME) + "/"
         
     def getLuaFolder(self):
         return os.path.dirname(self.output_folder + self.LUA_FOLDER_NAME) + "/"
+
+    def getBinsFolder(self):
+        return os.path.dirname(self.output_folder + self.BIN_FOLDER_NAME) + "/"
     
     def Register(self):
         help_string = 'Geoscan capture plugin: convert Cinema 4D' \
@@ -506,6 +510,7 @@ class c4d_capture(c4d.plugins.CommandData):
         max_points = int((max_time - self.time_step)/self.time_step)
         time = 0
         points_array = []
+        data = [[] for i in range(self.object_count)]
 
         collisions_array = []
         velocities_array = []
@@ -581,6 +586,13 @@ class c4d_capture(c4d.plugins.CommandData):
                 if int(vecPosition.y) > self.height_offset: # append if altitude greater than 0 in animation
                     s_xhex = binascii.hexlify(s)
                     points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
+                    data[counter].append([  time,
+                                            vecPosition.x,
+                                            vecPosition.z,
+                                            vecPosition.y,
+                                            int(vecRGB.x * 255),
+                                            int(vecRGB.y * 255),
+                                            int(vecRGB.z * 255)])
                 counter += 1
 
             # Check distance
@@ -639,6 +651,63 @@ local origin_lon = {3:f}
     --print (string.format("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\t%.2f\t\t%.2f\t\t", t/100, x/100, y/100, z/100, r/255, g/255, b/255))
 --end\n""".format(len(points_array[i])-2, self.STRUCT_FORMAT, self.lat, self.lon)
                 f.write(s)
+
+        if not os.path.exists(os.path.dirname(self.getBinsFolder())):
+            try:
+                os.makedirs(os.path.dirname(self.getBinsFolder()))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+
+        for i in range(self.object_count):
+            points_count = len(points_array[i])-2
+            fileName = self.getBinsFolder() + objNames[i] + ".bin"
+            with open (fileName, "wb") as f:
+                Version = 1
+                AnimationId = 1
+                FreqPositions = 2
+                FreqColors = 30
+                FormatPositions = 4
+                FormatColors = 1
+                NumberPositions = points_count//15 + 1
+                NumberColors = points_count
+                TimeStart = data[i][0][0]
+                TimeEnd = 0.0
+                LatOrigin = self.lat
+                LonOrigin = self.lon
+                AltOrigin = 0.0
+                HeaderFormat = '<BBBBBBHHfffff'
+                size = struct.calcsize(HeaderFormat)
+
+                f.write(struct.pack(HeaderFormat,   Version,
+                                                    AnimationId,
+                                                    FreqPositions,
+                                                    FreqColors,
+                                                    FormatPositions,
+                                                    FormatColors,
+                                                    NumberPositions,
+                                                    NumberColors,
+                                                    TimeStart,
+                                                    TimeEnd,
+                                                    LatOrigin,
+                                                    LonOrigin,
+                                                    AltOrigin))
+
+                for _ in range(size, 100):
+                    f.write(b'\x00')
+
+                counter = 0
+                for n in range(0, points_count, 15):
+                    f.write(struct.pack('<fff', *[pos/100 for pos in data[i][n][1:4]]))
+                    counter += 1
+
+                if counter < 1800:
+                    for _ in range(counter, 1800):
+                        f.write(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+
+                for n in range(points_count):
+                    f.write(struct.pack('<BBB', *data[i][n][4:7]))
+
         gui.MessageDialog("Files are generated!\n\nPlease, check collisions in console output!!!\nMain menu->Script->Console")
 
     def createLuaScripts (self):
