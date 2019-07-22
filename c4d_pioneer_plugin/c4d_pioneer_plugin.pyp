@@ -663,6 +663,8 @@ local origin_lon = {3:f}
             points_count = len(points_array[i])-2
             fileName = self.getBinsFolder() + objNames[i] + ".bin"
             with open (fileName, "wb") as f:
+                f.write(b'\xaa\xbb\xcc\xdd')
+
                 Version = 1
                 AnimationId = 1
                 FreqPositions = 2
@@ -693,7 +695,7 @@ local origin_lon = {3:f}
                                                     LonOrigin,
                                                     AltOrigin))
 
-                for _ in range(size, 100):
+                for _ in range(size + 4, 100):
                     f.write(b'\x00')
 
                 counter = 0

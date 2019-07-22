@@ -1,48 +1,46 @@
 -- Testing stuff
 -- require "c4d_test"
 
+local Color = {}
+	Color.first_led = 4
+	Color.last_led = 5
+	Color.leds = Ledbar.new(5)
+	Color.colors = {	red = 		{1, 0, 0},
+						green = 	{0, 1, 0},
+						blue = 		{0, 0, 1},
+						purple = 	{1, 0, 1},
+						cyan = 		{0, 1, 1},
+						yellow = 	{1, 1, 0},
+						white = 	{1, 1, 1},
+						black = 	{0, 0, 0}
+					}
+
+function Color.setAllLEDs(r, g, b)
+	for i = 0, Color.last_led, 1 do
+		Color.leds:set(i, r, g, b)
+	end
+end
+
+function Color.setInfoLEDs(r, g, b)
+	for i = 0, 3, 1 do
+		Color.leds:set(i, r, g, b)
+	end
+end
+
+local Position = {}
+	Position.setPosition = ap.goToLocalPoint
+
+local function getGlobalTime()
+	return time() + deltaTime()
+end
+
+local tblUnpack = table.unpack
+
 local Animation = {}
-
-function Animation.new(points_str)
-
-	-- local strUnpack = string.unpack
-	local tblUnpack = table.unpack
+function Animation.new()
 
 	local state = {stop = 0, idle = 1, flight = 2, landing = 3, test = 4}
 	
-	local function getGlobalTime()
-		return time() + deltaTime()
-	end
-
-	local Color = {}
-		Color.first_led = 4
-		Color.last_led = 5
-		Color.leds = Ledbar.new(5)
-		Color.colors = {	red = 		{1, 0, 0},
-							green = 	{0, 1, 0},
-							blue = 		{0, 0, 1},
-							purple = 	{1, 0, 1},
-							cyan = 		{0, 1, 1},
-							yellow = 	{1, 1, 0},
-							white = 	{1, 1, 1},
-							black = 	{0, 0, 0}
-						}
-
-	function Color.setAllLEDs(r, g, b)
-		for i = 0, Color.last_led, 1 do
-			Color.leds:set(i, r, g, b)
-		end
-	end
-
-	function Color.setInfoLEDs(r, g, b)
-		for i = 0, 3, 1 do
-			Color.leds:set(i, r, g, b)
-		end
-	end
-
-	local Position = {}
-		Position.setPosition = ap.goToLocalPoint
-
 	local obj = {}
 		obj.state = state.stop
 		obj.armed = false
@@ -192,6 +190,11 @@ local cfg = {}
 	cfg.light_onlanding = false
 	cfg.edge_marker = false
 
-anim = Animation.new(points)
-anim:setConfig(cfg)
-anim:spin()
+if NandLua.checkFile() then
+	anim = Animation.new()
+	anim:setConfig(cfg)
+	anim:spin()
+else
+	Color.setAllLEDs(tblUnpack(Color.colors.black))
+	Color.setInfoLEDs(tblUnpack(Color.colors.yellow))
+end

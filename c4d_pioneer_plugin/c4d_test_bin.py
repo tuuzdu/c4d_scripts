@@ -16,6 +16,7 @@ indx = 0
 print("Data of {} item: \n{} {} {} \n{} {} {}".format(indx, *[i/100 for i in data[indx][1:4]], *data[indx][4:7]))
 
 with open("points.bin", "wb") as binary_file:
+	binary_file.write(b'\xaa\xbb\xcc\xdd')
 	fields = dict(
 		Version = 1,
 		AnimationId = 1,
@@ -36,7 +37,7 @@ with open("points.bin", "wb") as binary_file:
 
 	binary_file.write(struct.pack(HeaderFormat, *fields.values()))
 
-	for _ in range(size, 100):
+	for _ in range(size + 4, 100):
 		binary_file.write(b'\x00')
 
 	counter = 0

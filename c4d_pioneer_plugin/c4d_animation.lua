@@ -154,8 +154,8 @@ function Animation.new(points_str)
 	end
 
 	function obj:waitStartLoop()
-		local _,_,_,_,_,_,_,ch8 = Sensors.rc()
-		if ch8 > 0 then 
+		local _,_,_,_,_,ch6,_,ch8 = Sensors.rc() -- TODO fix channel 6
+		if ch6 < 1 and ch8 > 0 then
 			local t = getGlobalTime()
 			local leap_second = 19
 			local t_period = 15 -- Time window
