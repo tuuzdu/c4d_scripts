@@ -18,14 +18,14 @@ function Animation.new(points_str)
 		Color.first_led = 4
 		Color.last_led = 28
 		Color.leds = Ledbar.new(29)
-		Color.colors = {	red = 		{1, 0, 0},
-							green = 	{0, 1, 0},
-							blue = 		{0, 0, 1},
-							purple = 	{1, 0, 1},
-							cyan = 		{0, 1, 1},
-							yellow = 	{1, 1, 0},
-							white = 	{1, 1, 1},
-							black = 	{0, 0, 0}
+		Color.colors = {	red =		{1, 0, 0},
+							green =		{0, 1, 0},
+							blue =		{0, 0, 1},
+							purple =	{1, 0, 1},
+							cyan =		{0, 1, 1},
+							yellow =	{1, 1, 0},
+							white =		{1, 1, 1},
+							black =		{0, 0, 0}
 						}
 
 	function Color.setAllLEDs(r, g, b)
@@ -200,8 +200,8 @@ end
 
 local cfg = {}
 	cfg.init_index = 1
-	cfg.time_after_prepare = 8
-	cfg.time_after_takeoff = 7
+	cfg.time_after_prepare = 5
+	cfg.time_after_takeoff = 5
 	cfg.light_onlanding = false
 	cfg.edge_marker = false
 

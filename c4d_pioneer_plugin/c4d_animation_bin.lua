@@ -2,9 +2,8 @@
 -- require "c4d_test"
 
 local Color = {}
-	Color.first_led = 4
-	Color.last_led = 5
-	Color.leds = Ledbar.new(5)
+	Color.last_led = 10
+	Color.leds = Ledbar.new(Color.last_led)
 	Color.colors = {	red = 		{1, 0, 0},
 						green = 	{0, 1, 0},
 						blue = 		{0, 0, 1},
