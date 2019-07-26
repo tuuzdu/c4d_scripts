@@ -2,8 +2,8 @@
 -- require "c4d_test"
 
 local Color = {}
-	Color.last_led = 10
-	Color.leds = Ledbar.new(Color.last_led)
+	Color.leds_number = 6
+	Color.leds = Ledbar.new(Color.leds_number)
 	Color.colors = {	red = 		{1, 0, 0},
 						green = 	{0, 1, 0},
 						blue = 		{0, 0, 1},
@@ -15,7 +15,7 @@ local Color = {}
 					}
 
 function Color.setAllLEDs(r, g, b)
-	for i = 0, Color.last_led, 1 do
+	for i = 0, (Color.leds_number - 1), 1 do
 		Color.leds:set(i, r, g, b)
 	end
 end
