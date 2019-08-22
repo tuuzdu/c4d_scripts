@@ -18,14 +18,14 @@ function Animation.new(points_str)
 		Color.first_led = 4
 		Color.last_led = 28
 		Color.leds = Ledbar.new(29)
-		Color.colors = {	red =		{1, 0, 0},
-							green =		{0, 1, 0},
-							blue =		{0, 0, 1},
-							purple =	{1, 0, 1},
-							cyan =		{0, 1, 1},
-							yellow =	{1, 1, 0},
-							white =		{1, 1, 1},
-							black =		{0, 0, 0}
+		Color.colors = {	red = 		{1, 0, 0},
+							green = 	{0, 1, 0},
+							blue = 		{0, 0, 1},
+							purple = 	{0.5, 0, 0.5},
+							cyan = 		{0, 0.5, 0.5},
+							yellow = 	{0.5, 0.5, 0},
+							white = 	{0.33, 0.33, 0.33},
+							black = 	{0, 0, 0}
 						}
 
 	function Color.setAllLEDs(r, g, b)
@@ -101,7 +101,7 @@ function Animation.new(points_str)
 					self:startEdgeMarker()
 				end
 				if e == Ev.POINT_REACHED then
-					sleep(30) -- For better RTK positioning
+					sleep(10) -- For better RTK positioning
 					ap.push(Ev.MCE_LANDING)
 				end
 			else
@@ -163,7 +163,9 @@ function Animation.new(points_str)
 			Color.setInfoLEDs(tblUnpack(Color.colors.green))
 			Timer.callAtGlobal(t_near, function () self:eventHandler(Ev.SYNC_START) end)
 		else
-			Timer.callLater(0.2, function () self:waitStartLoop() end)
+			if self.state == state.idle then
+				Timer.callLater(0.2, function () self:waitStartLoop() end)
+			end
 		end
 	end
 
@@ -200,7 +202,7 @@ end
 
 local cfg = {}
 	cfg.init_index = 1
-	cfg.time_after_prepare = 5
+	cfg.time_after_prepare = 10
 	cfg.time_after_takeoff = 5
 	cfg.light_onlanding = false
 	cfg.edge_marker = false
