@@ -470,7 +470,7 @@ class c4d_capture(c4d.plugins.CommandData):
         names = []
         # activeObjectName = self.getActiveObjectName()
         for indexName in range(self.object_count):
-            name = self.prefix + "{0:d}".format(indexName + 1) # Count from 1 in animation objects
+            name = self.prefix + "{0:d}".format(indexName) # Count from 1 in animation objects
             names.append(name)
             
         return names
@@ -571,7 +571,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 vel = (vel / self.time_step) / 100
                 # print vel
                 if vel > self.max_velocity and self.max_velocity > 0:
-                    s = "Velocity of\t{:03d}\tis\t{:.2f} m/s\tTime: {} s\tFrame: {}".format(counter+1, vel, time, int(time*fps))
+                    s = "Velocity of\t{:03d}\tis\t{:.2f} m/s\tTime: {} s\tFrame: {}".format(counter, vel, time, int(time*fps))
                     velocities_array.append(s)
 
                 s = struct.pack(self.STRUCT_FORMAT,
@@ -608,7 +608,7 @@ class c4d_capture(c4d.plugins.CommandData):
                         z2 = prev_vecPosition[k].z
                         distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
                         if distance < self.min_distance:
-                            collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j+1, k+1, distance, time, int(time*fps))
+                            collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance, time, int(time*fps))
                             collisions_array.append(collision_str)
             time += self.time_step
 
