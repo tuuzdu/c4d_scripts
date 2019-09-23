@@ -524,6 +524,9 @@ class c4d_capture(c4d.plugins.CommandData):
         objNames = self.getNames()
         objects = self.getObjects(objNames)
         prev_vecPosition = self.getPositions(objects)
+        n = len(prev_vecPosition)
+        collision_distance_array = [ [self.min_distance] * n for _ in range(n)]
+        collision_start_array = [ [0] * n for _ in range(n)]
 
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
@@ -583,7 +586,7 @@ class c4d_capture(c4d.plugins.CommandData):
                                                 int(vecRGB.y * 255), #B
                                                 int(vecRGB.z * 255)) #B
                 # print s
-                if int(vecPosition.y) > self.height_offset: # append if altitude greater than 0 in animation
+                if int(vecPosition.y) > (self.height_offset + 5): # append if altitude greater than 0 in animation
                     s_xhex = binascii.hexlify(s)
                     points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
                     data[counter].append([  time,
@@ -596,8 +599,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 counter += 1
 
             # Check distance
-            if self.min_distance > 0:
-                n = len(prev_vecPosition)
+            if self.min_distance > 0:                
                 for j in range(n-1):
                     for k in range(j+1, n):
                         x1 = prev_vecPosition[j].x
@@ -606,11 +608,19 @@ class c4d_capture(c4d.plugins.CommandData):
                         x2 = prev_vecPosition[k].x
                         y2 = prev_vecPosition[k].y
                         z2 = prev_vecPosition[k].z
-                        if (y1 > self.height_offset) and (y2 > self.height_offset):
+                        if y1 > (self.height_offset + 5) and y2 > (self.height_offset + 5):
                             distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
                             if distance < self.min_distance:
-                                collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance, time, int(time*fps))
-                                collisions_array.append(collision_str)
+                                if collision_start_array[j][k] == 0:
+                                    collision_start_array[j][k] = time
+                                if distance < collision_distance_array[j][k]:
+                                    collision_distance_array[j][k] = distance
+                            elif collision_start_array[j][k] != 0:
+                                    start_time = collision_start_array[j][k]
+                                    collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, collision_distance_array[j][k], start_time, time, int(start_time*fps), int(time*fps))
+                                    collisions_array.append(collision_str)
+                                    collision_start_array[j][k] = 0
+                                    collision_distance_array[j][k] = self.min_distance
             time += self.time_step
 
         # Console check report
