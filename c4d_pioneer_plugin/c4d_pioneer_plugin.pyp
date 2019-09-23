@@ -34,11 +34,12 @@ res = type('res', (), dict(
     TEXT_SCALE_PARTIAL= 1006, # Подпись. Частичный масштабом по x, y, z
     TEXT_ROTATION = 1007, # Подпись. Поворот в градусах
     TEXT_HEIGHT_OFFSET= 1008, # Подпись. Сдвиг по высоте
-    TEXT_TIME_STEP= 1009, # Подпись. Временной шаг в секундах
-    TEXT_TEMPLATE_PATH= 1010, # Подпись. Выбор файла шаблона
-    TEXT_LAT_LON_PARTIAL=1011,
-    TEXT_MAX_VELOCITY = 1012,
-    TEXT_MIN_DISTANCE = 1013,
+    TEXT_POINTS_FREQ = 1009, # Подпись. Частота точек
+    TEXT_COLORS_FREQ = 1010, # Подпись. Частота цветов
+    TEXT_TEMPLATE_PATH= 1011, # Подпись. Выбор файла шаблона
+    TEXT_LAT_LON_PARTIAL=1012, # Подпись. Точка GPS
+    TEXT_MAX_VELOCITY = 1013, # Подпись. Максимальная скорость
+    TEXT_MIN_DISTANCE = 1014, # Подпись. Минимальная дистанция
     
     
     # This is the ID for the group that contains the task widgets.
@@ -59,18 +60,20 @@ res = type('res', (), dict(
     EDIT_SCALE_Z= 4006, # Текстовое поле с масштабом по z
     EDIT_ROTATION = 4007, # Текстовое поле, редактирующее поворот в градусах
     EDIT_HEIGHT_OFFSET= 4008, # Текстовое поле. Сдвиг по высоте
-    EDIT_TIME_STEP= 4009, # Текстовое поле с временным шагом в секундах
-    EDIT_TEMPLATE_PATH = 4010, # Идентификатор текстового поля, в котором хранится путь до шаблона c4d_animation.lua
-    EDIT_LAT = 4011,
-    EDIT_LON = 4012,
-    EDIT_MAX_VELOCITY = 4013, # Максимальная скорость при проверке объектов
-    EDIT_MIN_DISTANCE = 4014, # Минимальная дистанция между дронами при проверке
+    EDIT_POINTS_FREQ = 4009, # Текстовое поле с частотой точек в герцах
+    EDIT_COLORS_FREQ = 4010, # Текстовое поле с частотой цветов в герцах
+    EDIT_TEMPLATE_PATH = 4011, # Идентификатор текстового поля, в котором хранится путь до шаблона c4d_animation.lua
+    EDIT_LAT = 4012,
+    EDIT_LON = 4013,
+    EDIT_MAX_VELOCITY = 4014, # Максимальная скорость при проверке объектов
+    EDIT_MIN_DISTANCE = 4015, # Минимальная дистанция между дронами при проверке
     
     CHECKBOX_GLOBAL_SCALE = 5000, #Чекбокс, регулирующий редактирование глобального масштаба
     
     # строковые константы
     STR_CFG_SECTION = "PioneerCapture",
-    STR_CFG_TIME_STEP = "TimeStep",
+    STR_CFG_POINTS_FREQ = "PointsFreq",
+    STR_CFG_COLORS_FREQ = "ColorsFreq",
     STR_CFG_SCALE_X = "ScaleX",
     STR_CFG_SCALE_Y = "ScaleY",
     STR_CFG_SCALE_Z = "ScaleZ",
@@ -115,7 +118,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config = ConfigParser.ConfigParser()
         Config.add_section(res.STR_CFG_SECTION)
         
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_TIME_STEP, self.GetString(res.EDIT_TIME_STEP))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ, self.GetString(res.EDIT_POINTS_FREQ))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ, self.GetString(res.EDIT_COLORS_FREQ))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X, self.GetString(res.EDIT_SCALE_X))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y, self.GetString(res.EDIT_SCALE_Y))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z, self.GetString(res.EDIT_SCALE_Z))
@@ -151,7 +155,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config = ConfigParser.ConfigParser()
         Config.read(filename)
         
-        self.SetString(res.EDIT_TIME_STEP, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_TIME_STEP))
+        self.SetString(res.EDIT_POINTS_FREQ, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ))
+        self.SetString(res.EDIT_COLORS_FREQ, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ))
         self.SetString(res.EDIT_SCALE_X, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X))
         self.SetString(res.EDIT_SCALE_Y, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y))
         self.SetString(res.EDIT_SCALE_Z, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z))
@@ -192,13 +197,19 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols = 2, rows = 6)
         global_initw = 450 # размер текстового поля должен быть одинаковым
         
-        # Раздел Time Step
-        self.AddStaticText(res.TEXT_TIME_STEP, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_TIME_STEP, "Time step for capture animation (s):")
+        # Раздел Points frequency
+        self.AddStaticText(res.TEXT_POINTS_FREQ, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_POINTS_FREQ, "Points frequency for capture animation (Hz):")
         
-        edit_time_step = self.AddEditText(res.EDIT_TIME_STEP, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Time Step
+        edit_points_freq = self.AddEditText(res.EDIT_POINTS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        # Конец раздела Points frequency
+
+        # Раздел Colors frequency
+        self.AddStaticText(res.TEXT_COLORS_FREQ, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_COLORS_FREQ, "Colors frequency for capture animation (Hz):")
         
+        edit_colors_freq = self.AddEditText(res.EDIT_COLORS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        # Конец раздела Colors frequency        
         
         # Раздел Partial Scale Factor
         self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
@@ -334,9 +345,10 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         elif param == res.BUTTON_GENERATE:
             # получаем параметры из GUI-компонентов
             error_string = ''
-            time_step = scale_x = scale_y = scale_z = lat = lon = max_velocity = height_offset = None
+            points_freq = colors_freq = scale_x = scale_y = scale_z = lat = lon = max_velocity = height_offset = None
             try:
-                time_step = float(self.GetString(res.EDIT_TIME_STEP))
+                points_freq = float(self.GetString(res.EDIT_POINTS_FREQ))
+                colors_freq = float(self.GetString(res.EDIT_COLORS_FREQ))
                 scale_x = float(self.GetString(res.EDIT_SCALE_X))
                 scale_y = float(self.GetString(res.EDIT_SCALE_Y))
                 scale_z = float(self.GetString(res.EDIT_SCALE_Z))
@@ -355,11 +367,17 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
             output_folder = self.GetString(res.EDIT_OUTPUT_FOLDER)
             
             # проверяем, что параметры прочитались
-            if time_step is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or max_velocity is None or output_folder is None:
+            if points_freq is None or colors_freq is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or max_velocity is None or output_folder is None:
                 error_string = error_string + 'Not all values specified.\n'
             # проверяем адекватность введённых значений
-            if (time_step < 1.0/30): # быстрее 30 кадров в секунду нельзя
-                error_string = error_string + 'Time step cannot be faster, than 30 fps.\n'
+            if points_freq > 2: # быстрее 2 кадров в секунду нельзя
+                error_string = error_string + 'Points frequency cannot be more than 2 fps.\n'
+            if colors_freq > 30: # быстрее 30 кадров в секунду нельзя
+                error_string = error_string + 'Colors frequency cannot be more than 30 fps.\n'
+            if points_freq > colors_freq:
+                error_string = error_string + 'Points frequency cannot be more than colors frequency.\n'
+            if colors_freq % points_freq:
+                error_string = error_string + 'Points and colors frequencies must be proportional.\n'
             if (not os.path.exists(template_path)):
                 error_string = error_string + 'No *.lua quadrocopter script template specified.\n'
             if (not os.path.exists(output_folder)):
@@ -369,9 +387,10 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 gui.MessageDialog(error_string)
                 return False
             else:
-                print("time_step={0}, scale_x={1}, scale_y={2}, scale_z={3}, rotation={4}, height_offset={5}, prefix={6}, N={7}, template={8} folder={9} max_vel={10}".format(time_step, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
+                print("\npoints_freq={0}, colors_freq={1}, scale_x={2}, scale_y={3}, scale_z={4}, rotation={5}, height_offset={6}, prefix={7}, N={8}, template={9} folder={10} max_vel={11}".format(points_freq, colors_freq, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
                 # прокидываем значения в модуль для выполнения
-                self.plugin.time_step = time_step
+                self.plugin.points_freq = points_freq
+                self.plugin.colors_freq = colors_freq
                 self.plugin.scale_x = scale_x
                 self.plugin.scale_y = scale_y
                 self.plugin.scale_z = scale_z
@@ -407,7 +426,9 @@ class c4d_capture(c4d.plugins.CommandData):
     r""" The purpose of this plugin is to convert
     Cinema 4D scenes into Geoscan "Pioneer" drone code. """
     
-    time_step = 0.5
+    points_freq = 2.0
+    colors_freq = 30.0
+    time_step = 1 / colors_freq
     object_count = 10
     max_velocity = 5
     scale_x = 1.0
@@ -456,17 +477,19 @@ class c4d_capture(c4d.plugins.CommandData):
                 self,                        # The plugin implementation
         )
     
-    def __init__(self, time_step=None, obj_number=None, base_name=None):
-        if not time_step is None:
-            self.time_step = time_step
-        if not obj_number is None:
+    def __init__(self, points_freq=None, colors_freq=None, obj_number=None, base_name=None):
+        if points_freq is not None:
+            self.points_freq = points_freq
+        if colors_freq is not None:
+            self.colors_freq = colors_freq    
+        if obj_number is not None:
             self.object_count = obj_number
-        if not base_name is None:
-            self.prefix = base_name
+        if base_name is not None:
+            self.prefix = base_name 
         self.module_path = os.path.dirname(__file__) # папка, в которой хранится модуль, очень полезна
         self.template_path = self.module_path + "/c4d_animation.lua" #путь до шаблона также обязателен
 
-    def getNames (self):
+    def getNames(self):
         names = []
         # activeObjectName = self.getActiveObjectName()
         for indexName in range(self.object_count):
@@ -487,7 +510,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 objects.append(obj)
         return objects
 
-    def getPositions (self, objects):
+    def getPositions(self, objects):
         vecPosition = []
         for obj in objects:
             vec = obj.GetAbsPos()
@@ -506,8 +529,9 @@ class c4d_capture(c4d.plugins.CommandData):
         doc = documents.GetActiveDocument()
         self.doc = doc
         max_time = doc.GetMaxTime().Get()
+        self.time_step = 1/self.colors_freq
         max_time = (max_time // self.time_step + 2) * self.time_step
-        max_points = int((max_time - self.time_step)/self.time_step)
+        max_points = int((max_time - self.time_step) / self.time_step)
         time = 0
         points_array = []
         data = [[] for i in range(self.object_count)]
@@ -617,7 +641,8 @@ class c4d_capture(c4d.plugins.CommandData):
                                     collision_distance_array[j][k] = distance
                             elif collision_start_array[j][k] != 0:
                                     start_time = collision_start_array[j][k]
-                                    collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, collision_distance_array[j][k], start_time, time, int(start_time*fps), int(time*fps))
+                                    end_time = time - self.time_step
+                                    collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, collision_distance_array[j][k], start_time, end_time, int(start_time*fps), int(end_time*fps))
                                     collisions_array.append(collision_str)
                                     collision_start_array[j][k] = 0
                                     collision_distance_array[j][k] = self.min_distance
@@ -672,18 +697,19 @@ local origin_lon = {3:f}
 
         for i in range(self.object_count):
             points_count = len(points_array[i])-2
+            freq_ratio = self.colors_freq/self.points_freq
             fileName = self.getBinsFolder() + objNames[i] + ".bin"
             with open (fileName, "wb") as f:
                 f.write(b'\xaa\xbb\xcc\xdd')
 
                 Version = 1
                 AnimationId = 1
-                FreqPositions = 2
-                FreqColors = 30
-                FormatPositions = 4
-                FormatColors = 1
-                NumberPositions = points_count//15
-                NumberColors = points_count
+                PointsFreq = self.points_freq
+                ColorsFreq = self.colors_freq
+                PointsFormat = 4
+                ColorsFormat = 1
+                PointsNumber = points_count//freq_ratio
+                ColorsNumber = points_count
                 TimeStart = data[i][0][0]
                 TimeEnd = 0.0
                 LatOrigin = self.lat
@@ -694,12 +720,12 @@ local origin_lon = {3:f}
 
                 f.write(struct.pack(HeaderFormat,   Version,
                                                     AnimationId,
-                                                    FreqPositions,
-                                                    FreqColors,
-                                                    FormatPositions,
-                                                    FormatColors,
-                                                    NumberPositions,
-                                                    NumberColors,
+                                                    PointsFreq,
+                                                    ColorsFreq,
+                                                    PointsFormat,
+                                                    ColorsFormat,
+                                                    PointsNumber,
+                                                    ColorsNumber,
                                                     TimeStart,
                                                     TimeEnd,
                                                     LatOrigin,
@@ -710,7 +736,7 @@ local origin_lon = {3:f}
                     f.write(b'\x00')
 
                 counter = 0
-                for n in range(0, points_count, 15):
+                for n in range(0, points_count, int(freq_ratio)):
                     f.write(struct.pack('<fff', *[pos/100 for pos in data[i][n][1:4]]))
                     counter += 1
 
