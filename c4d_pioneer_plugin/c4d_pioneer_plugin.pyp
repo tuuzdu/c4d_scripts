@@ -606,7 +606,7 @@ class c4d_capture(c4d.plugins.CommandData):
                         x2 = prev_vecPosition[k].x
                         y2 = prev_vecPosition[k].y
                         z2 = prev_vecPosition[k].z
-                        if (y1 > self.height_offset) or (y2 > self.height_offset):
+                        if (y1 > self.height_offset) and (y2 > self.height_offset):
                             distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
                             if distance < self.min_distance:
                                 collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance, time, int(time*fps))
