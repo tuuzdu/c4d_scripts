@@ -549,6 +549,9 @@ class c4d_capture(c4d.plugins.CommandData):
         objects = self.getObjects(objNames)
         prev_vecPosition = self.getPositions(objects)
         n = len(prev_vecPosition)
+        excess_velocity_array = [self.max_velocity] * n
+        excess_start_array = [0] * n
+        excess_frames_array = [0] * n
         collision_distance_array = [ [self.min_distance] * n for _ in range(n)]
         collision_start_array = [ [0] * n for _ in range(n)]
 
@@ -593,13 +596,26 @@ class c4d_capture(c4d.plugins.CommandData):
                 vecPosition.y = vecPosition.y + self.height_offset
 
                 # Calculate velocity
-                vel = pow((vecPosition.x - prev_vecPosition[counter].x) ** 2 + (vecPosition.y - prev_vecPosition[counter].y) ** 2 + (vecPosition.z - prev_vecPosition[counter].z) ** 2, 0.5)
-                prev_vecPosition[counter] = vecPosition
-                vel = (vel / self.time_step) / 100
-                # print vel
-                if vel > self.max_velocity and self.max_velocity > 0:
-                    s = "Velocity of\t{:03d}\tis\t{:.2f} m/s\tTime: {} s\tFrame: {}".format(counter, vel, time, int(time*fps))
-                    velocities_array.append(s)
+                if int(vecPosition.y) > (self.height_offset):
+                    vel = pow((vecPosition.x - prev_vecPosition[counter].x) ** 2 + (vecPosition.y - prev_vecPosition[counter].y) ** 2 + (vecPosition.z - prev_vecPosition[counter].z) ** 2, 0.5)
+                    vel = (vel / self.time_step) / 100
+                    # print vel
+                    if vel > self.max_velocity and self.max_velocity > 0:
+                        excess_frames_array[counter] = 0
+                        if excess_start_array[counter] == 0:
+                            excess_start_array[counter] = time
+                        if vel > excess_velocity_array[counter]:
+                            excess_velocity_array[counter] = vel
+                    elif excess_start_array[counter] != 0:
+                        if excess_frames_array[counter] > int(self.colors_freq):
+                            start_time = excess_start_array[counter]
+                            end_time = time - excess_frames_array[counter]*self.time_step
+                            s = "Velocity of\t{:03d}\tis up to\t{:.2f} m/s\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(counter, excess_velocity_array[counter], start_time, end_time, int(start_time*fps), int(end_time*fps))
+                            velocities_array.append(s)
+                            excess_start_array[counter] = 0
+                            excess_frames_array[counter] = 0
+                        else:
+                            excess_frames_array[counter] += 1
 
                 s = struct.pack(self.STRUCT_FORMAT,
                                                 int(time * 100),   #H
@@ -610,7 +626,7 @@ class c4d_capture(c4d.plugins.CommandData):
                                                 int(vecRGB.y * 255), #B
                                                 int(vecRGB.z * 255)) #B
                 # print s
-                if int(vecPosition.y) > (self.height_offset + 5): # append if altitude greater than 0 in animation
+                if int(vecPosition.y) > (self.height_offset): # append if altitude greater than 0 in animation
                     s_xhex = binascii.hexlify(s)
                     points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
                     data[counter].append([  time,
@@ -620,10 +636,11 @@ class c4d_capture(c4d.plugins.CommandData):
                                             int(vecRGB.x * 255),
                                             int(vecRGB.y * 255),
                                             int(vecRGB.z * 255)])
+                prev_vecPosition[counter] = vecPosition
                 counter += 1
 
             # Check distance
-            if self.min_distance > 0:                
+            if self.min_distance > 0:
                 for j in range(n-1):
                     for k in range(j+1, n):
                         x1 = prev_vecPosition[j].x
@@ -632,7 +649,7 @@ class c4d_capture(c4d.plugins.CommandData):
                         x2 = prev_vecPosition[k].x
                         y2 = prev_vecPosition[k].y
                         z2 = prev_vecPosition[k].z
-                        if y1 > (self.height_offset + 5) and y2 > (self.height_offset + 5):
+                        if int(y1) > (self.height_offset) and int(y2) > (self.height_offset):
                             distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
                             if distance < self.min_distance:
                                 if collision_start_array[j][k] == 0:
