@@ -40,6 +40,7 @@ res = type('res', (), dict(
     TEXT_LAT_LON_PARTIAL=1012, # Подпись. Точка GPS
     TEXT_MAX_VELOCITY = 1013, # Подпись. Максимальная скорость
     TEXT_MIN_DISTANCE = 1014, # Подпись. Минимальная дистанция
+    TEXT_ANIMATION_ID = 1015, # Подпись. ID анимации
     
     
     # This is the ID for the group that contains the task widgets.
@@ -67,11 +68,13 @@ res = type('res', (), dict(
     EDIT_LON = 4013,
     EDIT_MAX_VELOCITY = 4014, # Максимальная скорость при проверке объектов
     EDIT_MIN_DISTANCE = 4015, # Минимальная дистанция между дронами при проверке
+    EDIT_ANIMATION_ID = 4016, # ID анимации
     
     CHECKBOX_GLOBAL_SCALE = 5000, #Чекбокс, регулирующий редактирование глобального масштаба
     
     # строковые константы
     STR_CFG_SECTION = "PioneerCapture",
+    STR_CFG_ANIMATION_ID = "AnimationId",
     STR_CFG_POINTS_FREQ = "PointsFreq",
     STR_CFG_COLORS_FREQ = "ColorsFreq",
     STR_CFG_SCALE_X = "ScaleX",
@@ -118,6 +121,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config = ConfigParser.ConfigParser()
         Config.add_section(res.STR_CFG_SECTION)
         
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_ANIMATION_ID, self.GetString(res.EDIT_ANIMATION_ID))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ, self.GetString(res.EDIT_POINTS_FREQ))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ, self.GetString(res.EDIT_COLORS_FREQ))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X, self.GetString(res.EDIT_SCALE_X))
@@ -155,6 +159,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config = ConfigParser.ConfigParser()
         Config.read(filename)
         
+        self.SetString(res.EDIT_ANIMATION_ID, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_ANIMATION_ID))
         self.SetString(res.EDIT_POINTS_FREQ, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ))
         self.SetString(res.EDIT_COLORS_FREQ, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ))
         self.SetString(res.EDIT_SCALE_X, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X))
@@ -187,8 +192,10 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         # Отображаем заголовок активного документа
         self.AddStaticText(res.TEXT_DOCINFO, c4d.BFH_SCALEFIT)
         
+        self.GroupBegin(0, c4d.BFH_RIGHT, cols=2, rows=1)
         self.AddButton(res.BUTTON_LOAD_CONFIG, c4d.BFH_RIGHT, name = "Load")
         self.AddButton(res.BUTTON_SAVE_CONFIG, c4d.BFH_RIGHT, name = "Save")
+        self.GroupEnd()
         
         
         self.LayoutFlushGroup(c4d.ID_SCROLLGROUP_STATUSBAR_EXTLEFT_GROUP)
@@ -196,110 +203,99 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         # начинаем группу-таблицу | текст | поле редактиирования |
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols = 2, rows = 6)
         global_initw = 450 # размер текстового поля должен быть одинаковым
+
+        # Раздел Animation ID
+        self.AddStaticText(res.TEXT_ANIMATION_ID, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
+        self.SetString(res.TEXT_ANIMATION_ID, "Animation ID:")
+        
+        edit_animation_id = self.AddEditText(res.EDIT_ANIMATION_ID, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         
         # Раздел Points frequency
         self.AddStaticText(res.TEXT_POINTS_FREQ, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_POINTS_FREQ, "Points frequency for capture animation (Hz):")
         
         edit_points_freq = self.AddEditText(res.EDIT_POINTS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Points frequency
 
         # Раздел Colors frequency
         self.AddStaticText(res.TEXT_COLORS_FREQ, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_COLORS_FREQ, "Colors frequency for capture animation (Hz):")
         
-        edit_colors_freq = self.AddEditText(res.EDIT_COLORS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Colors frequency        
+        edit_colors_freq = self.AddEditText(res.EDIT_COLORS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)       
         
         # Раздел Partial Scale Factor
         self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_SCALE_PARTIAL, "Partial scale factor (x, y, z):")
-        
+        self.SetString(res.TEXT_SCALE_PARTIAL, "Partial scale factor (x, y, z):")        
         # группа предназначена для объединения трёх редактируемых текстовых поля
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
         edit_scale_x = self.AddEditText(res.EDIT_SCALE_X, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         edit_scale_y = self.AddEditText(res.EDIT_SCALE_Y, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         edit_scale_z = self.AddEditText(res.EDIT_SCALE_Z, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         self.GroupEnd()
-        # Конец раздела Partial Scale Factor
 
         # Раздел Latitude Longtitude
         self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_LAT_LON_PARTIAL, "Local origin (lat, lon; degrees):")
-
         # группа предназначена для объединения двух редактируемых текстовых поля
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
         edit_lat = self.AddEditText(res.EDIT_LAT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         edit_lon = self.AddEditText(res.EDIT_LON, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         self.GroupEnd()
-        # Конец раздела Latitude Longtitude
         
         # Раздел Rotate
         self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_ROTATION, "Horizontal rotation (counter clockwise; degrees):")
         
         edit_rotate = self.AddEditNumberArrows(res.EDIT_ROTATION, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Rotate
         
         # Раздел Base Height
         self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_HEIGHT_OFFSET, "Height offset (m):")
         
         edit_height_offset = self.AddEditText(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Base Height
         
         # Раздел Prefix
         self.AddStaticText(res.TEXT_PREFIX, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_PREFIX, "Object's name prefix:")
         
         edit_prefix = self.AddEditText(res.EDIT_PREFIX, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Prefix
         
         # Раздел Object count
         self.AddStaticText(res.TEXT_OBJECT_COUNT, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_OBJECT_COUNT, "Object count:")
         
         edit_object_count = self.AddEditNumberArrows(res.EDIT_OBJECT_COUNT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Object count
 
         # Раздел Max velocity
         self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_MAX_VELOCITY, "Max velocity check (0 for uncheck; m/s):")
 
         edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Max velocity
 
         # Раздел Min distance
         self.AddStaticText(res.TEXT_MIN_DISTANCE, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_MIN_DISTANCE, "Min distance check (0 for uncheck; m):")
 
         edit_min_distance = self.AddEditText(res.EDIT_MIN_DISTANCE, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Min distance
         
         # Раздел Template path
         self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_TEMPLATE_PATH, "LUA script template:")
-        
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
         edit_template_path= self.AddEditText(res.EDIT_TEMPLATE_PATH, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         self.Enable(edit_template_path, False) #выключаем редактирование поля (от греха подальше)
         self.AddButton(res.BUTTON_TEMPLATE_PATH, c4d.BFH_RIGHT, name="open")
-        self.GroupEnd()
-        # Конец раздела Template path
-        
+        self.GroupEnd()        
         
         # Раздел Output Folder
         self.AddStaticText(res.TEXT_OUTPUT_FOLDER, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
         self.SetString(res.TEXT_OUTPUT_FOLDER, "Output folder for generated scripts:")
-        
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
         edit_output_folder = self.AddEditText(res.EDIT_OUTPUT_FOLDER, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
         self.Enable(edit_output_folder, False) #выключаем редактирование поля (от греха подальше)
         self.AddButton(res.BUTTON_OPEN, c4d.BFH_RIGHT, name="open")
         self.GroupEnd()
-        # Конец раздела Output Folder
         
         self.GroupEnd() # конец группы-таблицы
         
@@ -345,8 +341,9 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         elif param == res.BUTTON_GENERATE:
             # получаем параметры из GUI-компонентов
             error_string = ''
-            points_freq = colors_freq = scale_x = scale_y = scale_z = lat = lon = max_velocity = height_offset = None
+            animation_id = points_freq = colors_freq = scale_x = scale_y = scale_z = lat = lon = max_velocity = height_offset = None
             try:
+                animation_id = int(self.GetString(res.EDIT_ANIMATION_ID))
                 points_freq = float(self.GetString(res.EDIT_POINTS_FREQ))
                 colors_freq = float(self.GetString(res.EDIT_COLORS_FREQ))
                 scale_x = float(self.GetString(res.EDIT_SCALE_X))
@@ -367,7 +364,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
             output_folder = self.GetString(res.EDIT_OUTPUT_FOLDER)
             
             # проверяем, что параметры прочитались
-            if points_freq is None or colors_freq is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or max_velocity is None or output_folder is None:
+            if animation_id is None or points_freq is None or colors_freq is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or max_velocity is None or output_folder is None:
                 error_string = error_string + 'Not all values specified.\n'
             # проверяем адекватность введённых значений
             if points_freq > 2: # быстрее 2 кадров в секунду нельзя
@@ -389,6 +386,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
             else:
                 print("\npoints_freq={0}, colors_freq={1}, scale_x={2}, scale_y={3}, scale_z={4}, rotation={5}, height_offset={6}, prefix={7}, N={8}, template={9} folder={10} max_vel={11}".format(points_freq, colors_freq, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
                 # прокидываем значения в модуль для выполнения
+                self.plugin.animation_id = animation_id
                 self.plugin.points_freq = points_freq
                 self.plugin.colors_freq = colors_freq
                 self.plugin.scale_x = scale_x
@@ -426,9 +424,10 @@ class c4d_capture(c4d.plugins.CommandData):
     r""" The purpose of this plugin is to convert
     Cinema 4D scenes into Geoscan "Pioneer" drone code. """
     
+    animation_id = 1
     points_freq = 2.0
     colors_freq = 30.0
-    time_step = 1 / colors_freq
+    time_step = 1.0 / colors_freq
     object_count = 10
     max_velocity = 5
     scale_x = 1.0
@@ -446,12 +445,12 @@ class c4d_capture(c4d.plugins.CommandData):
     drone_index = None # динамическая переменная с определением активного робота
     
     STRUCT_FORMAT = "HhhHBBB" # единственная константа, которая не будет изменяться
-    FOLDER_NAME = "./points/"
+    POINTS_FOLDER_NAME = "./points/"
     LUA_FOLDER_NAME = "./scripts/"
     BIN_FOLDER_NAME = "./bins/"
     
     def getPointsFolder(self):
-        return os.path.dirname(self.output_folder + self.FOLDER_NAME) + "/"
+        return os.path.dirname(self.output_folder + self.POINTS_FOLDER_NAME) + "/"
         
     def getLuaFolder(self):
         return os.path.dirname(self.output_folder + self.LUA_FOLDER_NAME) + "/"
@@ -477,7 +476,9 @@ class c4d_capture(c4d.plugins.CommandData):
                 self,                        # The plugin implementation
         )
     
-    def __init__(self, points_freq=None, colors_freq=None, obj_number=None, base_name=None):
+    def __init__(self, animation_id=None, points_freq=None, colors_freq=None, obj_number=None, base_name=None):
+        if animation_id is not None:
+            self.animation_id = animation_id
         if points_freq is not None:
             self.points_freq = points_freq
         if colors_freq is not None:
@@ -720,7 +721,7 @@ local origin_lon = {3:f}
                 f.write(b'\xaa\xbb\xcc\xdd')
 
                 Version = 1
-                AnimationId = 1
+                AnimationId = self.animation_id
                 PointsFreq = self.points_freq
                 ColorsFreq = self.colors_freq
                 PointsFormat = 4
@@ -729,8 +730,8 @@ local origin_lon = {3:f}
                 ColorsNumber = points_count
                 TimeStart = data[i][0][0]
                 TimeEnd = 0.0
-                LatOrigin = self.lat
-                LonOrigin = self.lon
+                OriginLat = self.lat
+                OriginLon = self.lon
                 AltOrigin = 0.0
                 HeaderFormat = '<BBBBBBHHfffff'
                 size = struct.calcsize(HeaderFormat)
@@ -745,8 +746,8 @@ local origin_lon = {3:f}
                                                     ColorsNumber,
                                                     TimeStart,
                                                     TimeEnd,
-                                                    LatOrigin,
-                                                    LonOrigin,
+                                                    OriginLat,
+                                                    OriginLon,
                                                     AltOrigin))
 
                 for _ in range(size + 4, 100):

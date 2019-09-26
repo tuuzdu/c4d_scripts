@@ -123,11 +123,11 @@ function Animation.new()
 		end
 	end
 
-	function obj:colorLoop(point_index)
-		if self.state == state.flight and point_index < self.number_colors then
-			local t = (point_index + 1) * self.period_color
-			Color.setAllLEDs(NandLua.readColor(point_index))
-			Timer.callAtGlobal(self.global_time_0 + t, function () self:colorLoop(point_index + 1) end)
+	function obj:colorLoop(color_index)
+		if self.state == state.flight and color_index < self.number_colors then
+			local t = (color_index + 1) * self.period_color
+			Color.setAllLEDs(NandLua.readColor(color_index))
+			Timer.callAtGlobal(self.global_time_0 + t, function () self:colorLoop(color_index + 1) end)
 		end
 	end
 	
