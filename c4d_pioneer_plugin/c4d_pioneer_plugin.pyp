@@ -41,6 +41,7 @@ res = type('res', (), dict(
     TEXT_MAX_VELOCITY = 1013, # Подпись. Максимальная скорость
     TEXT_MIN_DISTANCE = 1014, # Подпись. Минимальная дистанция
     TEXT_ANIMATION_ID = 1015, # Подпись. ID анимации
+    TEXT_CFG_FILE = 1016, # Подпись. Конфигурационный файл
     
     
     # This is the ID for the group that contains the task widgets.
@@ -107,7 +108,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
 
     def Refresh(self, flush=True, force=False, initial=False, reload_=False):
         current_doc = c4d.documents.GetActiveDocument()
-        title_text = "Project's name: %s" % current_doc.GetDocumentName()
+        title_text = "Project: %s" % current_doc.GetDocumentName()
         self.SetString(res.TEXT_DOCINFO, title_text)
     
     # функция для сохранения настроек в конфигурационном файле
@@ -190,41 +191,42 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.GroupBorderSpace(4, 4, 4, 4)
         
         # Отображаем заголовок активного документа
-        self.AddStaticText(res.TEXT_DOCINFO, c4d.BFH_SCALEFIT)
-        
-        self.GroupBegin(0, c4d.BFH_RIGHT, cols=2, rows=1)
-        self.AddButton(res.BUTTON_LOAD_CONFIG, c4d.BFH_RIGHT, name = "Load")
-        self.AddButton(res.BUTTON_SAVE_CONFIG, c4d.BFH_RIGHT, name = "Save")
+        self.GroupBegin(0, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, cols=4, rows=1)
+        self.AddStaticText(res.TEXT_DOCINFO, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)        
+        self.AddStaticText(res.TEXT_CFG_FILE, c4d.BFH_RIGHT, name = "Config:")
+        self.AddButton(res.BUTTON_LOAD_CONFIG, c4d.BFH_RIGHT, name = "Load...")
+        self.AddButton(res.BUTTON_SAVE_CONFIG, c4d.BFH_RIGHT, name = "Save...")
         self.GroupEnd()
-        
         
         self.LayoutFlushGroup(c4d.ID_SCROLLGROUP_STATUSBAR_EXTLEFT_GROUP)
         
         # начинаем группу-таблицу | текст | поле редактиирования |
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols = 2, rows = 6)
-        global_initw = 450 # размер текстового поля должен быть одинаковым
+        param_initw = 450 # размер текстового поля
+        value_initw = 200 # размер поля значений
 
         # Раздел Animation ID
-        self.AddStaticText(res.TEXT_ANIMATION_ID, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_ANIMATION_ID, "Animation ID:")
+        self.AddStaticText(res.TEXT_ANIMATION_ID, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Animation ID:")
+        # self.SetString(res.TEXT_ANIMATION_ID, "Animation ID:")
         
-        edit_animation_id = self.AddEditText(res.EDIT_ANIMATION_ID, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_animation_id = self.AddEditNumber(res.EDIT_ANIMATION_ID, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Points frequency
-        self.AddStaticText(res.TEXT_POINTS_FREQ, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_POINTS_FREQ, "Points frequency for capture animation (Hz):")
+        self.AddStaticText(res.TEXT_POINTS_FREQ, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Points frequency for capture animation (Hz):")
         
-        edit_points_freq = self.AddEditText(res.EDIT_POINTS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_points_freq = self.AddEditText(res.EDIT_POINTS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
 
         # Раздел Colors frequency
-        self.AddStaticText(res.TEXT_COLORS_FREQ, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_COLORS_FREQ, "Colors frequency for capture animation (Hz):")
+        self.AddStaticText(res.TEXT_COLORS_FREQ, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Colors frequency for capture animation (Hz):")
         
-        edit_colors_freq = self.AddEditText(res.EDIT_COLORS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)       
+        edit_colors_freq = self.AddEditText(res.EDIT_COLORS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)       
         
         # Раздел Partial Scale Factor
-        self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_SCALE_PARTIAL, "Partial scale factor (x, y, z):")        
+        self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Partial scale factor (x, y, z):")        
         # группа предназначена для объединения трёх редактируемых текстовых поля
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
         edit_scale_x = self.AddEditText(res.EDIT_SCALE_X, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
@@ -233,8 +235,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.GroupEnd()
 
         # Раздел Latitude Longtitude
-        self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_LAT_LON_PARTIAL, "Local origin (lat, lon; degrees):")
+        self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Local origin (lat, lon; degrees):")
         # группа предназначена для объединения двух редактируемых текстовых поля
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
         edit_lat = self.AddEditText(res.EDIT_LAT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
@@ -242,59 +244,59 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.GroupEnd()
         
         # Раздел Rotate
-        self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_ROTATION, "Horizontal rotation (counter clockwise; degrees):")
+        self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Horizontal rotation (counter clockwise; degrees):")
         
-        edit_rotate = self.AddEditNumberArrows(res.EDIT_ROTATION, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_rotate = self.AddEditNumberArrows(res.EDIT_ROTATION, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Base Height
-        self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_HEIGHT_OFFSET, "Height offset (m):")
+        self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Height offset (m):")
         
-        edit_height_offset = self.AddEditText(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_height_offset = self.AddEditText(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Prefix
-        self.AddStaticText(res.TEXT_PREFIX, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_PREFIX, "Object's name prefix:")
+        self.AddStaticText(res.TEXT_PREFIX, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Object's name prefix:")
         
-        edit_prefix = self.AddEditText(res.EDIT_PREFIX, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_prefix = self.AddEditText(res.EDIT_PREFIX, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Object count
-        self.AddStaticText(res.TEXT_OBJECT_COUNT, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_OBJECT_COUNT, "Object count:")
+        self.AddStaticText(res.TEXT_OBJECT_COUNT, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Object count:")
         
-        edit_object_count = self.AddEditNumberArrows(res.EDIT_OBJECT_COUNT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_object_count = self.AddEditNumberArrows(res.EDIT_OBJECT_COUNT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
 
         # Раздел Max velocity
-        self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_MAX_VELOCITY, "Max velocity check (0 for uncheck; m/s):")
+        self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Max velocity check (0 for uncheck; m/s):")
 
-        edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
 
         # Раздел Min distance
-        self.AddStaticText(res.TEXT_MIN_DISTANCE, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_MIN_DISTANCE, "Min distance check (0 for uncheck; m):")
+        self.AddStaticText(res.TEXT_MIN_DISTANCE, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Min distance check (0 for uncheck; m):")
 
-        edit_min_distance = self.AddEditText(res.EDIT_MIN_DISTANCE, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_min_distance = self.AddEditText(res.EDIT_MIN_DISTANCE, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Template path
-        self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_TEMPLATE_PATH, "LUA script template:")
+        self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "LUA script template:")
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
-        edit_template_path= self.AddEditText(res.EDIT_TEMPLATE_PATH, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_template_path= self.AddEditText(res.EDIT_TEMPLATE_PATH, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         self.Enable(edit_template_path, False) #выключаем редактирование поля (от греха подальше)
-        self.AddButton(res.BUTTON_TEMPLATE_PATH, c4d.BFH_RIGHT, name="open")
+        self.AddButton(res.BUTTON_TEMPLATE_PATH, c4d.BFH_RIGHT, name="Open...")
         self.GroupEnd()        
         
         # Раздел Output Folder
-        self.AddStaticText(res.TEXT_OUTPUT_FOLDER, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_OUTPUT_FOLDER, "Output folder for generated scripts:")
+        self.AddStaticText(res.TEXT_OUTPUT_FOLDER, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Output folder for generated scripts:")
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
-        edit_output_folder = self.AddEditText(res.EDIT_OUTPUT_FOLDER, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_output_folder = self.AddEditText(res.EDIT_OUTPUT_FOLDER, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         self.Enable(edit_output_folder, False) #выключаем редактирование поля (от греха подальше)
-        self.AddButton(res.BUTTON_OPEN, c4d.BFH_RIGHT, name="open")
+        self.AddButton(res.BUTTON_OPEN, c4d.BFH_RIGHT, name="Open...")
         self.GroupEnd()
         
         self.GroupEnd() # конец группы-таблицы
@@ -442,7 +444,6 @@ class c4d_capture(c4d.plugins.CommandData):
     # инициализируются позже:
     module_path = None
     template_path = None
-    drone_index = None # динамическая переменная с определением активного робота
     
     STRUCT_FORMAT = "HhhHBBB" # единственная константа, которая не будет изменяться
     POINTS_FOLDER_NAME = "./points/"
