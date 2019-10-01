@@ -47,7 +47,7 @@ res = type('res', (), dict(
     # This is the ID for the group that contains the task widgets.
     GROUP_TASKS = 2000,
 
-    BUTTON_OPEN = 3000, # Идентификатор кнопки для открытия целевой папки для скриптов
+    BUTTON_OUTPUT_FOLDER = 3000, # Идентификатор кнопки для открытия целевой папки для скриптов
     BUTTON_TEMPLATE_PATH = 3001, # Идентификатор кнопки для выбора шаблона c4d_animation.lua
     BUTTON_GENERATE = 3002, # Идентификатор кнопки для запуска генерации скриптов
     BUTTON_LOAD_CONFIG = 3003, # Кнопка загрузки конфигурации
@@ -296,7 +296,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
         edit_output_folder = self.AddEditText(res.EDIT_OUTPUT_FOLDER, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         self.Enable(edit_output_folder, False) #выключаем редактирование поля (от греха подальше)
-        self.AddButton(res.BUTTON_OPEN, c4d.BFH_RIGHT, name="Open...")
+        self.AddButton(res.BUTTON_OUTPUT_FOLDER, c4d.BFH_RIGHT, name="Open...")
         self.GroupEnd()
         
         self.GroupEnd() # конец группы-таблицы
@@ -316,7 +316,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         
     def Command(self, param, bc):
         # если тыкнули в кнопку "открыть файл"
-        if param == res.BUTTON_OPEN:
+        if param == res.BUTTON_OUTPUT_FOLDER:
             filename = c4d.storage.LoadDialog(title="Choose folder to store files", flags = c4d.FILESELECT_DIRECTORY)
             if not filename is None:
                 self.output_folder = filename
@@ -567,7 +567,7 @@ class c4d_capture(c4d.plugins.CommandData):
         while time <= max_time:
             shot_time = c4d.BaseTime(time)
             doc.SetTime(shot_time)
-            c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)
+            c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)            
             counter = 0
             for obj in objects:
                 #Get color
@@ -618,8 +618,8 @@ class c4d_capture(c4d.plugins.CommandData):
                             excess_frames_array[counter] = 0
                         else:
                             excess_frames_array[counter] += 1
-
-                s = struct.pack(self.STRUCT_FORMAT,
+                try:
+                    s = struct.pack(self.STRUCT_FORMAT,
                                                 int(time * 100),   #H
                                                 int(vecPosition.x), #h
                                                 int(vecPosition.z), #h
@@ -627,6 +627,9 @@ class c4d_capture(c4d.plugins.CommandData):
                                                 int(vecRGB.x * 255), #B
                                                 int(vecRGB.y * 255), #B
                                                 int(vecRGB.z * 255)) #B
+                except:
+                    gui.MessageDialog("Position out of format range")
+                    raise
                 # print s
                 if int(vecPosition.y) > (self.height_offset): # append if altitude greater than 0 in animation
                     s_xhex = binascii.hexlify(s)
