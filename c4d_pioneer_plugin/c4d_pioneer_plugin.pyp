@@ -34,17 +34,20 @@ res = type('res', (), dict(
     TEXT_SCALE_PARTIAL= 1006, # Подпись. Частичный масштабом по x, y, z
     TEXT_ROTATION = 1007, # Подпись. Поворот в градусах
     TEXT_HEIGHT_OFFSET= 1008, # Подпись. Сдвиг по высоте
-    TEXT_TIME_STEP= 1009, # Подпись. Временной шаг в секундах
-    TEXT_TEMPLATE_PATH= 1010, # Подпись. Выбор файла шаблона
-    TEXT_LAT_LON_PARTIAL=1011,
-    TEXT_MAX_VELOCITY = 1012,
-    TEXT_MIN_DISTANCE = 1013,
+    TEXT_POINTS_FREQ = 1009, # Подпись. Частота точек
+    TEXT_COLORS_FREQ = 1010, # Подпись. Частота цветов
+    TEXT_TEMPLATE_PATH= 1011, # Подпись. Выбор файла шаблона
+    TEXT_LAT_LON_PARTIAL=1012, # Подпись. Точка GPS
+    TEXT_MAX_VELOCITY = 1013, # Подпись. Максимальная скорость
+    TEXT_MIN_DISTANCE = 1014, # Подпись. Минимальная дистанция
+    TEXT_ANIMATION_ID = 1015, # Подпись. ID анимации
+    TEXT_CFG_FILE = 1016, # Подпись. Конфигурационный файл
     
     
     # This is the ID for the group that contains the task widgets.
     GROUP_TASKS = 2000,
 
-    BUTTON_OPEN = 3000, # Идентификатор кнопки для открытия целевой папки для скриптов
+    BUTTON_OUTPUT_FOLDER = 3000, # Идентификатор кнопки для открытия целевой папки для скриптов
     BUTTON_TEMPLATE_PATH = 3001, # Идентификатор кнопки для выбора шаблона c4d_animation.lua
     BUTTON_GENERATE = 3002, # Идентификатор кнопки для запуска генерации скриптов
     BUTTON_LOAD_CONFIG = 3003, # Кнопка загрузки конфигурации
@@ -59,18 +62,22 @@ res = type('res', (), dict(
     EDIT_SCALE_Z= 4006, # Текстовое поле с масштабом по z
     EDIT_ROTATION = 4007, # Текстовое поле, редактирующее поворот в градусах
     EDIT_HEIGHT_OFFSET= 4008, # Текстовое поле. Сдвиг по высоте
-    EDIT_TIME_STEP= 4009, # Текстовое поле с временным шагом в секундах
-    EDIT_TEMPLATE_PATH = 4010, # Идентификатор текстового поля, в котором хранится путь до шаблона c4d_animation.lua
-    EDIT_LAT = 4011,
-    EDIT_LON = 4012,
-    EDIT_MAX_VELOCITY = 4013, # Максимальная скорость при проверке объектов
-    EDIT_MIN_DISTANCE = 4014, # Минимальная дистанция между дронами при проверке
+    EDIT_POINTS_FREQ = 4009, # Текстовое поле с частотой точек в герцах
+    EDIT_COLORS_FREQ = 4010, # Текстовое поле с частотой цветов в герцах
+    EDIT_TEMPLATE_PATH = 4011, # Идентификатор текстового поля, в котором хранится путь до шаблона c4d_animation.lua
+    EDIT_LAT = 4012,
+    EDIT_LON = 4013,
+    EDIT_MAX_VELOCITY = 4014, # Максимальная скорость при проверке объектов
+    EDIT_MIN_DISTANCE = 4015, # Минимальная дистанция между дронами при проверке
+    EDIT_ANIMATION_ID = 4016, # ID анимации
     
     CHECKBOX_GLOBAL_SCALE = 5000, #Чекбокс, регулирующий редактирование глобального масштаба
     
     # строковые константы
     STR_CFG_SECTION = "PioneerCapture",
-    STR_CFG_TIME_STEP = "TimeStep",
+    STR_CFG_ANIMATION_ID = "AnimationId",
+    STR_CFG_POINTS_FREQ = "PointsFreq",
+    STR_CFG_COLORS_FREQ = "ColorsFreq",
     STR_CFG_SCALE_X = "ScaleX",
     STR_CFG_SCALE_Y = "ScaleY",
     STR_CFG_SCALE_Z = "ScaleZ",
@@ -101,7 +108,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
 
     def Refresh(self, flush=True, force=False, initial=False, reload_=False):
         current_doc = c4d.documents.GetActiveDocument()
-        title_text = "Project's name: %s" % current_doc.GetDocumentName()
+        title_text = "Project: %s" % current_doc.GetDocumentName()
         self.SetString(res.TEXT_DOCINFO, title_text)
     
     # функция для сохранения настроек в конфигурационном файле
@@ -115,7 +122,9 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config = ConfigParser.ConfigParser()
         Config.add_section(res.STR_CFG_SECTION)
         
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_TIME_STEP, self.GetString(res.EDIT_TIME_STEP))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_ANIMATION_ID, self.GetString(res.EDIT_ANIMATION_ID))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ, self.GetString(res.EDIT_POINTS_FREQ))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ, self.GetString(res.EDIT_COLORS_FREQ))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X, self.GetString(res.EDIT_SCALE_X))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y, self.GetString(res.EDIT_SCALE_Y))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z, self.GetString(res.EDIT_SCALE_Z))
@@ -151,7 +160,9 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config = ConfigParser.ConfigParser()
         Config.read(filename)
         
-        self.SetString(res.EDIT_TIME_STEP, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_TIME_STEP))
+        self.SetString(res.EDIT_ANIMATION_ID, Config.getint(res.STR_CFG_SECTION, res.STR_CFG_ANIMATION_ID))
+        self.SetString(res.EDIT_POINTS_FREQ, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ))
+        self.SetString(res.EDIT_COLORS_FREQ, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ))
         self.SetString(res.EDIT_SCALE_X, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X))
         self.SetString(res.EDIT_SCALE_Y, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y))
         self.SetString(res.EDIT_SCALE_Z, Config.getfloat(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z))
@@ -180,115 +191,113 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.GroupBorderSpace(4, 4, 4, 4)
         
         # Отображаем заголовок активного документа
-        self.AddStaticText(res.TEXT_DOCINFO, c4d.BFH_SCALEFIT)
-        
-        self.AddButton(res.BUTTON_LOAD_CONFIG, c4d.BFH_RIGHT, name = "Load")
-        self.AddButton(res.BUTTON_SAVE_CONFIG, c4d.BFH_RIGHT, name = "Save")
-        
+        self.GroupBegin(0, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, cols=4, rows=1)
+        self.AddStaticText(res.TEXT_DOCINFO, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)        
+        self.AddStaticText(res.TEXT_CFG_FILE, c4d.BFH_RIGHT, name = "Config:")
+        self.AddButton(res.BUTTON_LOAD_CONFIG, c4d.BFH_RIGHT, name = "Load...")
+        self.AddButton(res.BUTTON_SAVE_CONFIG, c4d.BFH_RIGHT, name = "Save...")
+        self.GroupEnd()
         
         self.LayoutFlushGroup(c4d.ID_SCROLLGROUP_STATUSBAR_EXTLEFT_GROUP)
         
         # начинаем группу-таблицу | текст | поле редактиирования |
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols = 2, rows = 6)
-        global_initw = 450 # размер текстового поля должен быть одинаковым
+        param_initw = 450 # размер текстового поля
+        value_initw = 200 # размер поля значений
+
+        # Раздел Animation ID
+        self.AddStaticText(res.TEXT_ANIMATION_ID, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Animation ID:")
+        # self.SetString(res.TEXT_ANIMATION_ID, "Animation ID:")
         
-        # Раздел Time Step
-        self.AddStaticText(res.TEXT_TIME_STEP, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_TIME_STEP, "Time step for capture animation (s):")
+        edit_animation_id = self.AddEditNumber(res.EDIT_ANIMATION_ID, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
-        edit_time_step = self.AddEditText(res.EDIT_TIME_STEP, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Time Step
+        # Раздел Points frequency
+        self.AddStaticText(res.TEXT_POINTS_FREQ, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Points frequency for capture animation (Hz):")
         
+        edit_points_freq = self.AddEditText(res.EDIT_POINTS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
+
+        # Раздел Colors frequency
+        self.AddStaticText(res.TEXT_COLORS_FREQ, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Colors frequency for capture animation (Hz):")
+        
+        edit_colors_freq = self.AddEditText(res.EDIT_COLORS_FREQ, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)       
         
         # Раздел Partial Scale Factor
-        self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_SCALE_PARTIAL, "Partial scale factor (x, y, z):")
-        
+        self.AddStaticText(res.TEXT_SCALE_PARTIAL, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Partial scale factor (x, y, z):")        
         # группа предназначена для объединения трёх редактируемых текстовых поля
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
         edit_scale_x = self.AddEditText(res.EDIT_SCALE_X, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         edit_scale_y = self.AddEditText(res.EDIT_SCALE_Y, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         edit_scale_z = self.AddEditText(res.EDIT_SCALE_Z, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         self.GroupEnd()
-        # Конец раздела Partial Scale Factor
 
         # Раздел Latitude Longtitude
-        self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_LAT_LON_PARTIAL, "Local origin (lat, lon; degrees):")
-
+        self.AddStaticText(res.TEXT_LAT_LON_PARTIAL, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Local origin (lat, lon; degrees):")
         # группа предназначена для объединения двух редактируемых текстовых поля
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=3, rows=1)
         edit_lat = self.AddEditText(res.EDIT_LAT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         edit_lon = self.AddEditText(res.EDIT_LON, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         self.GroupEnd()
-        # Конец раздела Latitude Longtitude
         
         # Раздел Rotate
-        self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_ROTATION, "Horizontal rotation (counter clockwise; degrees):")
+        self.AddStaticText(res.TEXT_ROTATION, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Horizontal rotation (counter clockwise; degrees):")
         
-        edit_rotate = self.AddEditNumberArrows(res.EDIT_ROTATION, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Rotate
+        edit_rotate = self.AddEditNumberArrows(res.EDIT_ROTATION, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Base Height
-        self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_HEIGHT_OFFSET, "Height offset (m):")
+        self.AddStaticText(res.TEXT_HEIGHT_OFFSET, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Height offset (m):")
         
-        edit_height_offset = self.AddEditText(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Base Height
+        edit_height_offset = self.AddEditText(res.EDIT_HEIGHT_OFFSET, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Prefix
-        self.AddStaticText(res.TEXT_PREFIX, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_PREFIX, "Object's name prefix:")
+        self.AddStaticText(res.TEXT_PREFIX, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Object's name prefix:")
         
-        edit_prefix = self.AddEditText(res.EDIT_PREFIX, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Prefix
+        edit_prefix = self.AddEditText(res.EDIT_PREFIX, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Object count
-        self.AddStaticText(res.TEXT_OBJECT_COUNT, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_OBJECT_COUNT, "Object count:")
+        self.AddStaticText(res.TEXT_OBJECT_COUNT, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Object count:")
         
-        edit_object_count = self.AddEditNumberArrows(res.EDIT_OBJECT_COUNT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Object count
+        edit_object_count = self.AddEditNumberArrows(res.EDIT_OBJECT_COUNT, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
 
         # Раздел Max velocity
-        self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_MAX_VELOCITY, "Max velocity check (0 for uncheck; m/s):")
+        self.AddStaticText(res.TEXT_MAX_VELOCITY, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Max velocity check (0 for uncheck; m/s):")
 
-        edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Max velocity
+        edit_max_velocity = self.AddEditText(res.EDIT_MAX_VELOCITY, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
 
         # Раздел Min distance
-        self.AddStaticText(res.TEXT_MIN_DISTANCE, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_MIN_DISTANCE, "Min distance check (0 for uncheck; m):")
+        self.AddStaticText(res.TEXT_MIN_DISTANCE, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Min distance check (0 for uncheck; m):")
 
-        edit_min_distance = self.AddEditText(res.EDIT_MIN_DISTANCE, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
-        # Конец раздела Min distance
+        edit_min_distance = self.AddEditText(res.EDIT_MIN_DISTANCE, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         
         # Раздел Template path
-        self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_TEMPLATE_PATH, "LUA script template:")
-        
+        self.AddStaticText(res.TEXT_TEMPLATE_PATH, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "LUA script template:")
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
-        edit_template_path= self.AddEditText(res.EDIT_TEMPLATE_PATH, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_template_path= self.AddEditText(res.EDIT_TEMPLATE_PATH, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         self.Enable(edit_template_path, False) #выключаем редактирование поля (от греха подальше)
-        self.AddButton(res.BUTTON_TEMPLATE_PATH, c4d.BFH_RIGHT, name="open")
-        self.GroupEnd()
-        # Конец раздела Template path
-        
+        self.AddButton(res.BUTTON_TEMPLATE_PATH, c4d.BFH_RIGHT, name="Open...")
+        self.GroupEnd()        
         
         # Раздел Output Folder
-        self.AddStaticText(res.TEXT_OUTPUT_FOLDER, c4d.BFH_RIGHT, initw=global_initw, borderstyle = c4d.BORDER_BLACK)
-        self.SetString(res.TEXT_OUTPUT_FOLDER, "Output folder for generated scripts:")
-        
+        self.AddStaticText(res.TEXT_OUTPUT_FOLDER, c4d.BFH_RIGHT, initw=param_initw, borderstyle = c4d.BORDER_BLACK,
+            name = "Output folder for generated scripts:")
         # группа предназначена для группировки нередактируемого поля и кнопки "открыть"
         self.GroupBegin(0, c4d.BFH_SCALEFIT | c4d.BFV_TOP, cols=0, rows=1)
-        edit_output_folder = self.AddEditText(res.EDIT_OUTPUT_FOLDER, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = 200)
+        edit_output_folder = self.AddEditText(res.EDIT_OUTPUT_FOLDER, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, initw = value_initw)
         self.Enable(edit_output_folder, False) #выключаем редактирование поля (от греха подальше)
-        self.AddButton(res.BUTTON_OPEN, c4d.BFH_RIGHT, name="open")
+        self.AddButton(res.BUTTON_OUTPUT_FOLDER, c4d.BFH_RIGHT, name="Open...")
         self.GroupEnd()
-        # Конец раздела Output Folder
         
         self.GroupEnd() # конец группы-таблицы
         
@@ -307,7 +316,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         
     def Command(self, param, bc):
         # если тыкнули в кнопку "открыть файл"
-        if param == res.BUTTON_OPEN:
+        if param == res.BUTTON_OUTPUT_FOLDER:
             filename = c4d.storage.LoadDialog(title="Choose folder to store files", flags = c4d.FILESELECT_DIRECTORY)
             if not filename is None:
                 self.output_folder = filename
@@ -334,9 +343,11 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         elif param == res.BUTTON_GENERATE:
             # получаем параметры из GUI-компонентов
             error_string = ''
-            time_step = scale_x = scale_y = scale_z = lat = lon = max_velocity = height_offset = None
+            animation_id = points_freq = colors_freq = scale_x = scale_y = scale_z = lat = lon = max_velocity = height_offset = None
             try:
-                time_step = float(self.GetString(res.EDIT_TIME_STEP))
+                animation_id = int(self.GetString(res.EDIT_ANIMATION_ID))
+                points_freq = float(self.GetString(res.EDIT_POINTS_FREQ))
+                colors_freq = float(self.GetString(res.EDIT_COLORS_FREQ))
                 scale_x = float(self.GetString(res.EDIT_SCALE_X))
                 scale_y = float(self.GetString(res.EDIT_SCALE_Y))
                 scale_z = float(self.GetString(res.EDIT_SCALE_Z))
@@ -355,11 +366,17 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
             output_folder = self.GetString(res.EDIT_OUTPUT_FOLDER)
             
             # проверяем, что параметры прочитались
-            if time_step is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or max_velocity is None or output_folder is None:
+            if animation_id is None or points_freq is None or colors_freq is None or scale_x is None or scale_y is None or scale_z is None or prefix is None or object_count is None or max_velocity is None or output_folder is None:
                 error_string = error_string + 'Not all values specified.\n'
             # проверяем адекватность введённых значений
-            if (time_step < 1.0/30): # быстрее 30 кадров в секунду нельзя
-                error_string = error_string + 'Time step cannot be faster, than 30 fps.\n'
+            if points_freq > 2: # быстрее 2 кадров в секунду нельзя
+                error_string = error_string + 'Points frequency cannot be more than 2 fps.\n'
+            if colors_freq > 30: # быстрее 30 кадров в секунду нельзя
+                error_string = error_string + 'Colors frequency cannot be more than 30 fps.\n'
+            if points_freq > colors_freq:
+                error_string = error_string + 'Points frequency cannot be more than colors frequency.\n'
+            if colors_freq % points_freq:
+                error_string = error_string + 'Points and colors frequencies must be proportional.\n'
             if (not os.path.exists(template_path)):
                 error_string = error_string + 'No *.lua quadrocopter script template specified.\n'
             if (not os.path.exists(output_folder)):
@@ -369,9 +386,11 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 gui.MessageDialog(error_string)
                 return False
             else:
-                print("time_step={0}, scale_x={1}, scale_y={2}, scale_z={3}, rotation={4}, height_offset={5}, prefix={6}, N={7}, template={8} folder={9} max_vel={10}".format(time_step, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
+                print("\npoints_freq={0}, colors_freq={1}, scale_x={2}, scale_y={3}, scale_z={4}, rotation={5}, height_offset={6}, prefix={7}, N={8}, template={9} folder={10} max_vel={11}".format(points_freq, colors_freq, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
                 # прокидываем значения в модуль для выполнения
-                self.plugin.time_step = time_step
+                self.plugin.animation_id = animation_id
+                self.plugin.points_freq = points_freq
+                self.plugin.colors_freq = colors_freq
                 self.plugin.scale_x = scale_x
                 self.plugin.scale_y = scale_y
                 self.plugin.scale_z = scale_z
@@ -407,7 +426,10 @@ class c4d_capture(c4d.plugins.CommandData):
     r""" The purpose of this plugin is to convert
     Cinema 4D scenes into Geoscan "Pioneer" drone code. """
     
-    time_step = 0.5
+    animation_id = 1
+    points_freq = 2.0
+    colors_freq = 30.0
+    time_step = 1.0 / colors_freq
     object_count = 10
     max_velocity = 5
     scale_x = 1.0
@@ -422,15 +444,14 @@ class c4d_capture(c4d.plugins.CommandData):
     # инициализируются позже:
     module_path = None
     template_path = None
-    drone_index = None # динамическая переменная с определением активного робота
     
     STRUCT_FORMAT = "HhhHBBB" # единственная константа, которая не будет изменяться
-    FOLDER_NAME = "./points/"
+    POINTS_FOLDER_NAME = "./points/"
     LUA_FOLDER_NAME = "./scripts/"
     BIN_FOLDER_NAME = "./bins/"
     
     def getPointsFolder(self):
-        return os.path.dirname(self.output_folder + self.FOLDER_NAME) + "/"
+        return os.path.dirname(self.output_folder + self.POINTS_FOLDER_NAME) + "/"
         
     def getLuaFolder(self):
         return os.path.dirname(self.output_folder + self.LUA_FOLDER_NAME) + "/"
@@ -456,17 +477,21 @@ class c4d_capture(c4d.plugins.CommandData):
                 self,                        # The plugin implementation
         )
     
-    def __init__(self, time_step=None, obj_number=None, base_name=None):
-        if not time_step is None:
-            self.time_step = time_step
-        if not obj_number is None:
+    def __init__(self, animation_id=None, points_freq=None, colors_freq=None, obj_number=None, base_name=None):
+        if animation_id is not None:
+            self.animation_id = animation_id
+        if points_freq is not None:
+            self.points_freq = points_freq
+        if colors_freq is not None:
+            self.colors_freq = colors_freq    
+        if obj_number is not None:
             self.object_count = obj_number
-        if not base_name is None:
-            self.prefix = base_name
+        if base_name is not None:
+            self.prefix = base_name 
         self.module_path = os.path.dirname(__file__) # папка, в которой хранится модуль, очень полезна
         self.template_path = self.module_path + "/c4d_animation.lua" #путь до шаблона также обязателен
 
-    def getNames (self):
+    def getNames(self):
         names = []
         # activeObjectName = self.getActiveObjectName()
         for indexName in range(self.object_count):
@@ -487,7 +512,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 objects.append(obj)
         return objects
 
-    def getPositions (self, objects):
+    def getPositions(self, objects):
         vecPosition = []
         for obj in objects:
             vec = obj.GetAbsPos()
@@ -506,8 +531,9 @@ class c4d_capture(c4d.plugins.CommandData):
         doc = documents.GetActiveDocument()
         self.doc = doc
         max_time = doc.GetMaxTime().Get()
+        self.time_step = 1/self.colors_freq
         max_time = (max_time // self.time_step + 2) * self.time_step
-        max_points = int((max_time - self.time_step)/self.time_step)
+        max_points = int((max_time - self.time_step) / self.time_step)
         time = 0
         points_array = []
         data = [[] for i in range(self.object_count)]
@@ -524,6 +550,12 @@ class c4d_capture(c4d.plugins.CommandData):
         objNames = self.getNames()
         objects = self.getObjects(objNames)
         prev_vecPosition = self.getPositions(objects)
+        n = len(prev_vecPosition)
+        excess_velocity_array = [self.max_velocity] * n
+        excess_start_array = [0] * n
+        excess_frames_array = [0] * n
+        collision_distance_array = [ [self.min_distance] * n for _ in range(n)]
+        collision_start_array = [ [0] * n for _ in range(n)]
 
         for i in range(self.object_count):
             s = '-- Time step is {0:.2f} s\n'\
@@ -535,7 +567,7 @@ class c4d_capture(c4d.plugins.CommandData):
         while time <= max_time:
             shot_time = c4d.BaseTime(time)
             doc.SetTime(shot_time)
-            c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)
+            c4d.DrawViews(c4d.DRAWFLAGS_ONLY_ACTIVE_VIEW | c4d.DRAWFLAGS_NO_REDUCTION | c4d.DRAWFLAGS_NO_THREAD)            
             counter = 0
             for obj in objects:
                 #Get color
@@ -566,15 +598,28 @@ class c4d_capture(c4d.plugins.CommandData):
                 vecPosition.y = vecPosition.y + self.height_offset
 
                 # Calculate velocity
-                vel = pow((vecPosition.x - prev_vecPosition[counter].x) ** 2 + (vecPosition.y - prev_vecPosition[counter].y) ** 2 + (vecPosition.z - prev_vecPosition[counter].z) ** 2, 0.5)
-                prev_vecPosition[counter] = vecPosition
-                vel = (vel / self.time_step) / 100
-                # print vel
-                if vel > self.max_velocity and self.max_velocity > 0:
-                    s = "Velocity of\t{:03d}\tis\t{:.2f} m/s\tTime: {} s\tFrame: {}".format(counter, vel, time, int(time*fps))
-                    velocities_array.append(s)
-
-                s = struct.pack(self.STRUCT_FORMAT,
+                if int(vecPosition.y) > (self.height_offset):
+                    vel = pow((vecPosition.x - prev_vecPosition[counter].x) ** 2 + (vecPosition.y - prev_vecPosition[counter].y) ** 2 + (vecPosition.z - prev_vecPosition[counter].z) ** 2, 0.5)
+                    vel = (vel / self.time_step) / 100
+                    # print vel
+                    if vel > self.max_velocity and self.max_velocity > 0:
+                        excess_frames_array[counter] = 0
+                        if excess_start_array[counter] == 0:
+                            excess_start_array[counter] = time
+                        if vel > excess_velocity_array[counter]:
+                            excess_velocity_array[counter] = vel
+                    elif excess_start_array[counter] != 0:
+                        if excess_frames_array[counter] > int(self.colors_freq):
+                            start_time = excess_start_array[counter]
+                            end_time = time - excess_frames_array[counter]*self.time_step
+                            s = "Velocity of\t{:03d}\tis up to\t{:.2f} m/s\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(counter, excess_velocity_array[counter], start_time, end_time, int(start_time*fps), int(end_time*fps))
+                            velocities_array.append(s)
+                            excess_start_array[counter] = 0
+                            excess_frames_array[counter] = 0
+                        else:
+                            excess_frames_array[counter] += 1
+                try:
+                    s = struct.pack(self.STRUCT_FORMAT,
                                                 int(time * 100),   #H
                                                 int(vecPosition.x), #h
                                                 int(vecPosition.z), #h
@@ -582,8 +627,11 @@ class c4d_capture(c4d.plugins.CommandData):
                                                 int(vecRGB.x * 255), #B
                                                 int(vecRGB.y * 255), #B
                                                 int(vecRGB.z * 255)) #B
+                except:
+                    gui.MessageDialog("Position out of format range")
+                    raise
                 # print s
-                if int(vecPosition.y) > self.height_offset: # append if altitude greater than 0 in animation
+                if int(vecPosition.y) > (self.height_offset): # append if altitude greater than 0 in animation
                     s_xhex = binascii.hexlify(s)
                     points_array[counter].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
                     data[counter].append([  time,
@@ -593,11 +641,11 @@ class c4d_capture(c4d.plugins.CommandData):
                                             int(vecRGB.x * 255),
                                             int(vecRGB.y * 255),
                                             int(vecRGB.z * 255)])
+                prev_vecPosition[counter] = vecPosition
                 counter += 1
 
             # Check distance
             if self.min_distance > 0:
-                n = len(prev_vecPosition)
                 for j in range(n-1):
                     for k in range(j+1, n):
                         x1 = prev_vecPosition[j].x
@@ -606,10 +654,20 @@ class c4d_capture(c4d.plugins.CommandData):
                         x2 = prev_vecPosition[k].x
                         y2 = prev_vecPosition[k].y
                         z2 = prev_vecPosition[k].z
-                        distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
-                        if distance < self.min_distance:
-                            collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tDistance: {:.2f} m\tTime: {} s\tFrame: {}".format(j, k, distance, time, int(time*fps))
-                            collisions_array.append(collision_str)
+                        if int(y1) > (self.height_offset) and int(y2) > (self.height_offset):
+                            distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100
+                            if distance < self.min_distance:
+                                if collision_start_array[j][k] == 0:
+                                    collision_start_array[j][k] = time
+                                if distance < collision_distance_array[j][k]:
+                                    collision_distance_array[j][k] = distance
+                            elif collision_start_array[j][k] != 0:
+                                    start_time = collision_start_array[j][k]
+                                    end_time = time - self.time_step
+                                    collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, collision_distance_array[j][k], start_time, end_time, int(start_time*fps), int(end_time*fps))
+                                    collisions_array.append(collision_str)
+                                    collision_start_array[j][k] = 0
+                                    collision_distance_array[j][k] = self.min_distance
             time += self.time_step
 
         # Console check report
@@ -661,45 +719,46 @@ local origin_lon = {3:f}
 
         for i in range(self.object_count):
             points_count = len(points_array[i])-2
+            freq_ratio = self.colors_freq/self.points_freq
             fileName = self.getBinsFolder() + objNames[i] + ".bin"
             with open (fileName, "wb") as f:
                 f.write(b'\xaa\xbb\xcc\xdd')
 
                 Version = 1
-                AnimationId = 1
-                FreqPositions = 2
-                FreqColors = 30
-                FormatPositions = 4
-                FormatColors = 1
-                NumberPositions = points_count//15
-                NumberColors = points_count
+                AnimationId = self.animation_id
+                PointsFreq = self.points_freq
+                ColorsFreq = self.colors_freq
+                PointsFormat = 4
+                ColorsFormat = 1
+                PointsNumber = points_count//freq_ratio
+                ColorsNumber = points_count
                 TimeStart = data[i][0][0]
                 TimeEnd = 0.0
-                LatOrigin = self.lat
-                LonOrigin = self.lon
+                OriginLat = self.lat
+                OriginLon = self.lon
                 AltOrigin = 0.0
                 HeaderFormat = '<BBBBBBHHfffff'
                 size = struct.calcsize(HeaderFormat)
 
                 f.write(struct.pack(HeaderFormat,   Version,
                                                     AnimationId,
-                                                    FreqPositions,
-                                                    FreqColors,
-                                                    FormatPositions,
-                                                    FormatColors,
-                                                    NumberPositions,
-                                                    NumberColors,
+                                                    PointsFreq,
+                                                    ColorsFreq,
+                                                    PointsFormat,
+                                                    ColorsFormat,
+                                                    PointsNumber,
+                                                    ColorsNumber,
                                                     TimeStart,
                                                     TimeEnd,
-                                                    LatOrigin,
-                                                    LonOrigin,
+                                                    OriginLat,
+                                                    OriginLon,
                                                     AltOrigin))
 
                 for _ in range(size + 4, 100):
                     f.write(b'\x00')
 
                 counter = 0
-                for n in range(0, points_count, 15):
+                for n in range(0, points_count, int(freq_ratio)):
                     f.write(struct.pack('<fff', *[pos/100 for pos in data[i][n][1:4]]))
                     counter += 1
 
