@@ -158,7 +158,8 @@ function Animation.new()
 
 	function obj:spin()
 		self.state = state.idle
-		Color.setInfoLEDs(tblUnpack(Color.colors.red))
+		start_color = NandLua.readAnimationId() * 360 / 255 -- Convert from int format to hue
+		Color.setInfoLEDs(fromHSV(start_color, 100, 100))
 		self:waitStartLoop()
 		-- self:startTest() -- For debugging
 	end
