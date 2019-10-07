@@ -386,7 +386,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 gui.MessageDialog(error_string)
                 return False
             else:
-                print("\npoints_freq={0}, colors_freq={1}, scale_x={2}, scale_y={3}, scale_z={4}, rotation={5}, height_offset={6}, prefix={7}, N={8}, template={9} folder={10} max_vel={11}".format(points_freq, colors_freq, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
+                print("\npoints_freq = {0}, colors_freq = {1}, scale_x = {2}, scale_y = {3}, scale_z = {4}, rotation = {5}, height_offset = {6}, prefix = {7}, N = {8}, max_vel = {11}\nTemplate: {9}\nOutput folder: {10}".format(points_freq, colors_freq, scale_x, scale_y, scale_z, rotation, height_offset, prefix, object_count, template_path, output_folder, max_velocity))
                 # прокидываем значения в модуль для выполнения
                 self.plugin.animation_id = animation_id
                 self.plugin.points_freq = points_freq
@@ -578,7 +578,7 @@ class c4d_capture(c4d.plugins.CommandData):
                     gui.MessageDialog("Didn't find object's ({0:s}) tag \"Material\"".format(obj.GetName()))
                     return
                 vecRGB = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR) # получаем RGB
-                    
+
                 #Get position
                 vecPosition = obj.GetAbsPos()
 
@@ -598,26 +598,33 @@ class c4d_capture(c4d.plugins.CommandData):
                 vecPosition.y = vecPosition.y + self.height_offset
 
                 # Calculate velocity
-                if int(vecPosition.y) > (self.height_offset):
-                    vel = pow((vecPosition.x - prev_vecPosition[counter].x) ** 2 + (vecPosition.y - prev_vecPosition[counter].y) ** 2 + (vecPosition.z - prev_vecPosition[counter].z) ** 2, 0.5)
-                    vel = (vel / self.time_step) / 100
-                    # print vel
-                    if vel > self.max_velocity and self.max_velocity > 0:
-                        excess_frames_array[counter] = 0
-                        if excess_start_array[counter] == 0:
-                            excess_start_array[counter] = time
-                        if vel > excess_velocity_array[counter]:
-                            excess_velocity_array[counter] = vel
-                    elif excess_start_array[counter] != 0:
-                        if excess_frames_array[counter] > int(self.colors_freq):
-                            start_time = excess_start_array[counter]
-                            end_time = time - excess_frames_array[counter]*self.time_step
-                            s = "Velocity of\t{:03d}\tis up to\t{:.2f} m/s\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(counter, excess_velocity_array[counter], start_time, end_time, int(start_time*fps), int(end_time*fps))
-                            velocities_array.append(s)
-                            excess_start_array[counter] = 0
+                if self.max_velocity > 0:
+                    if int(vecPosition.y) > (self.height_offset):
+                        vel = pow((vecPosition.x - prev_vecPosition[counter].x) ** 2 + (vecPosition.y - prev_vecPosition[counter].y) ** 2 + (vecPosition.z - prev_vecPosition[counter].z) ** 2, 0.5)
+                        vel = (vel / self.time_step) / 100
+                        if vel > self.max_velocity:
                             excess_frames_array[counter] = 0
-                        else:
-                            excess_frames_array[counter] += 1
+                            if excess_start_array[counter] == 0:
+                                excess_start_array[counter] = time
+                            if vel > excess_velocity_array[counter]:
+                                excess_velocity_array[counter] = vel
+                        elif excess_start_array[counter] != 0:
+                            if excess_frames_array[counter] > int(self.colors_freq):
+                                start_time = excess_start_array[counter]
+                                end_time = time - excess_frames_array[counter]*self.time_step
+                                s = "Velocity of\t{:03d}\tis up to\t{:.2f} m/s\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(counter, excess_velocity_array[counter], start_time, end_time, int(start_time*fps), int(end_time*fps))
+                                velocities_array.append(s)
+                                excess_start_array[counter] = 0
+                                excess_frames_array[counter] = 0
+                            else:
+                                excess_frames_array[counter] += 1
+                    if excess_start_array[counter] != 0 and (time + self.time_step) > max_time:
+                        start_time = excess_start_array[counter]
+                        end_time = time - excess_frames_array[counter]*self.time_step
+                        s = "Velocity of\t{:03d}\tis up to\t{:.2f} m/s\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(counter, excess_velocity_array[counter], start_time, end_time, int(start_time*fps), int(end_time*fps))
+                        velocities_array.append(s)
+                        excess_start_array[counter] = 0
+                        excess_frames_array[counter] = 0
                 try:
                     s = struct.pack(self.STRUCT_FORMAT,
                                                 int(time * 100),   #H
@@ -668,6 +675,13 @@ class c4d_capture(c4d.plugins.CommandData):
                                     collisions_array.append(collision_str)
                                     collision_start_array[j][k] = 0
                                     collision_distance_array[j][k] = self.min_distance
+                        if collision_start_array[j][k] != 0 and (time + self.time_step) > max_time:
+                            start_time = collision_start_array[j][k]
+                            end_time = time - self.time_step
+                            collision_str = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, collision_distance_array[j][k], start_time, end_time, int(start_time*fps), int(end_time*fps))
+                            collisions_array.append(collision_str)
+                            collision_start_array[j][k] = 0
+                            collision_distance_array[j][k] = self.min_distance
             time += self.time_step
 
         # Console check report
