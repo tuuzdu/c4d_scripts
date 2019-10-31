@@ -693,10 +693,12 @@ class c4d_capture(c4d.plugins.CommandData):
         #Get position
         vecPosition = obj.GetAbsPos()
 
+        objScale = obj.GetAbsScale()
+
         # масштабирование пространственного вектора
-        vecPosition.x = vecPosition.x * self.scale_x
-        vecPosition.y = vecPosition.y * self.scale_y
-        vecPosition.z = vecPosition.z * self.scale_z
+        vecPosition.x = vecPosition.x * self.scale_x / abs(objScale.x)
+        vecPosition.y = vecPosition.y * self.scale_y / abs(objScale.y)
+        vecPosition.z = vecPosition.z * self.scale_z / abs(objScale.z)
         
         #поворот в пространстве вдоль оси OY (направлена вверх)
         if self.rotation == 0 or self.rotation == 360:
