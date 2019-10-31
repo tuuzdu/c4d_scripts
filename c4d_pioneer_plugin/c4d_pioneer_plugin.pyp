@@ -117,6 +117,18 @@ def RaiseMessage(message):
 def RaiseErrorMessage(message):
     gui.MessageDialog(message, type=c4d.GEMB_ICONEXCLAMATION)
 
+class GenerationError(Exception):
+    def __init__(self, console=None, dialog=None):
+        if console is not None:
+            print(console)
+        else:
+            print('Error occured.')
+        print('\nGeneration stopped.')
+        if dialog is not None:
+            RaiseErrorMessage(dialog + '\n\nСheck console for more details.\nMain menu->Script->Console')
+        else:
+            RaiseErrorMessage('Error occured')
+
 class PioneerCaptureDialog(c4d.gui.GeDialog):
     def __init__(self):
         self.current_doc = c4d.documents.GetActiveDocument()
@@ -514,7 +526,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 else:
                     self.plugin.time_start = time_start
                     self.plugin.time_end = time_end
-                self.plugin.main() # наконец вызываем долгожданный метод
+                self.plugin.main()
                 return True
 
         return False
@@ -650,8 +662,9 @@ class c4d_capture(c4d.plugins.CommandData):
             time_start = 0
             time_end = self.max_time
         if (time_end - time_start) > 600:
-            RaiseErrorMessage("Animation duration cannot be more than 600 seconds (due to copter flight restrictions)")
-            return 0, 0
+            raise GenerationError(console='Animation duration is more than 600 seconds ' \
+                '(start: {} sec, end: {} sec)'.format(time_start,time_end),
+                dialog='Animation duration cannot be more than 600 seconds (due to copter flight restrictions)')
         return time_start, time_end
 
     def updateView(self, time):
@@ -677,6 +690,15 @@ class c4d_capture(c4d.plugins.CommandData):
                 '-- [time]=cs, [x][y][z]=cm, [r][g][b]=0-255\n'\
                 'local points  =  "'.format(self.time_step, self.max_points)
             self.points_array.append([s])
+
+    def checkZeroAlt(self):
+        initNonZeroAltObjects = []
+        for i in range(self.object_count):
+            if int(self.positionsArray[i].y) > 0:
+                initNonZeroAltObjects.append(i)
+        if initNonZeroAltObjects != []:
+            console = 'Copters with non zero altitude on start: ' + str(initNonZeroAltObjects).strip('[]')
+            raise GenerationError(console=console, dialog='Not all copters have zero altitude on start.')
 
     def getColor(self, obj):
         try:
@@ -722,18 +744,17 @@ class c4d_capture(c4d.plugins.CommandData):
                                         int(vecRGB.x * 255), #B
                                         int(vecRGB.y * 255), #B
                                         int(vecRGB.z * 255)) #B
-        except:
-            print("\n\nObject '{0}':\nTime = {1}\nx = {2}, y = {3}, z = {4}\nred = {5}, green = {6}, blue = {7}\n\n".format(
-                                        obj.GetName(), #0
-                                        (time * 100), #1
-                                        (vecPosition.x), #2
-                                        (vecPosition.z), #3
-                                        (vecPosition.y), #4
-                                        (vecRGB.x * 255), #5
-                                        (vecRGB.y * 255), #6
-                                        (vecRGB.z * 255))) #7
-            RaiseErrorMessage("Data out of format range.\n\nCheck console.")
-            raise
+        except struct.error:
+            console = 'Data out of format range for object \'{}\':\nTime = {} / should be int\nx = {}, y = {}, z = {} / should be short\nred = {}, green = {}, blue = {} / should be unsigned char'.format(
+                                        (self.prefix + str(objNumber)),
+                                        (time * 100),
+                                        (vecPosition.x),
+                                        (vecPosition.z),
+                                        (vecPosition.y),
+                                        (vecRGB.x * 255),
+                                        (vecRGB.y * 255),
+                                        (vecRGB.z * 255))
+            raise GenerationError(console=console, dialog='Data out of format range.')
         if int(vecPosition.y) > 0:# (self.height_offset): # append if altitude greater than 0 in animation
             s_xhex = binascii.hexlify(s)
             self.points_array[objNumber].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
@@ -807,6 +828,8 @@ class c4d_capture(c4d.plugins.CommandData):
                     self.collision_distance_array[j][k] = self.min_distance
     
     def printConsoleOutput(self):
+        msg_collision = "\nTOTAL NUMBER OF COLLISIONS: {}".format(len(self.collisions_array))
+        msg_velocities = "\nTOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(self.velocities_array))
         print "\n"
         if self.notakeoff:
             print('Drones ' + str(self.notakeoff).strip('[]') + ' have no takeoff. This files are not generated.\n')
@@ -820,8 +843,6 @@ class c4d_capture(c4d.plugins.CommandData):
                 print s
             print "\n"
             RaiseErrorMessage(msg_velocities)
-        msg_collision = "\nTOTAL NUMBER OF COLLISIONS: {}".format(len(self.collisions_array))
-        msg_velocities = "\nTOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(self.velocities_array))
         print msg_collision
         print msg_velocities
 
@@ -927,41 +948,47 @@ class c4d_capture(c4d.plugins.CommandData):
                 for k in range(points_count):
                     f.write(struct.pack('<BBB', *data[i][k][4:7]))
 
-    def main(self):
-        self.getDocInfo()
-        time_start, time_end = self.getTimeRange()
-        if time_end == 0:
-            print "Animation duration is more than 600 seconds. Generation stopped."
-            return False
-        self.updateView(time_start)
-        self.initArrays()
-
-        dataArray = [[] for _ in range(self.object_count)]
-        time = time_start
-        while time <= time_end:
-            self.updateView(time)
-            self.positionsArrayPrev = [_ for _ in self.positionsArray]
-            objNumber = 0
-            for obj in self.objects:
-                position = self.getPosition(obj)
-                self.positionsArray[objNumber] = position
-                if int(position.y) > 0:
-                    color = self.getColor(obj)
-                    data = self.getData(time, objNumber, position, color)
-                    dataArray[objNumber].append(data)
-                objNumber += 1
-            if self.min_distance > 0:
-                self.checkDistance(time, time_end)
-            if self.max_velocity > 0:
-                self.checkVelocity(time, time_end)
-            time += self.time_step
-        self.writeBinFile(dataArray)
-        self.writeScriptFile()
-        self.printConsoleOutput()
+    def finish(self):
         if self.notakeoff:
             RaiseErrorMessage("Not all files are generated. Some copters have no takeoff.\n\nPlease, check results in console output.\nMain menu->Script->Console")
         else:
             RaiseMessage("Files are generated.\n\nPlease, check collisions in console output.\nMain menu->Script->Console")
+
+    def main(self):
+        try:
+            self.getDocInfo()
+            time_start, time_end = self.getTimeRange()
+            self.updateView(time_start)
+            self.initArrays()
+            self.checkZeroAlt()
+
+            dataArray = [[] for _ in range(self.object_count)]
+            time = time_start
+            while time <= time_end:
+                self.updateView(time)
+                self.positionsArrayPrev = [_ for _ in self.positionsArray]
+                objNumber = 0
+                for obj in self.objects:
+                    position = self.getPosition(obj)
+                    self.positionsArray[objNumber] = position
+                    if int(position.y) > 0:
+                        color = self.getColor(obj)
+                        data = self.getData(time, objNumber, position, color)
+                        dataArray[objNumber].append(data)
+                    objNumber += 1
+                if self.min_distance > 0:
+                    self.checkDistance(time, time_end)
+                if self.max_velocity > 0:
+                    self.checkVelocity(time, time_end)
+                time += self.time_step
+
+            self.writeBinFile(dataArray)
+            self.writeScriptFile()
+            self.printConsoleOutput()
+
+            self.finish()
+        except GenerationError:
+            return
                 
     @property
     def dialog(self):
