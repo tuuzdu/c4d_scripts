@@ -55,6 +55,7 @@ function Animation.new()
 
 	function obj:setConfig(cfg)
 		Config.init_index = cfg.init_index or 0
+		Config.t_after_syncstart = cfg.time_ater_syncstart or 0.1
 		Config.t_after_prepare = cfg.time_after_prepare or 5
 		Config.t_after_takeoff = cfg.time_after_takeoff or 5
 		Config.t_leds_after_fail = cfg.time_leds_after_fail or 30
@@ -92,7 +93,7 @@ function Animation.new()
 			else
 				if e == Ev.SYNC_START and self.state == state.idle then
 					local t = Config.t_after_prepare + Config.t_after_takeoff
-					self.global_time_0 = getGlobalTime() + self.t_init + t
+					self.global_time_0 = getGlobalTime() + self.t_init + t + Config.t_after_syncstart
 					Color.setInfoLEDs(tblUnpack(Color.colors.blue))
 					Timer.callAtGlobal(self.global_time_0 - t, function () self:animInit() end)
 					logEnable(true)
@@ -187,6 +188,7 @@ function callback(event)
 end
 
 local cfg = {}
+	cfg.time_ater_syncstart = 0.1
 	cfg.time_after_prepare = 10
 	cfg.time_after_takeoff = 5
 	cfg.light_onlanding = false
