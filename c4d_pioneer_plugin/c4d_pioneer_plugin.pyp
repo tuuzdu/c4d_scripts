@@ -126,8 +126,6 @@ class GenerationError(Exception):
         print('\nGeneration stopped.')
         if dialog is not None:
             RaiseErrorMessage(dialog + '\n\nСheck console for more details.\nMain menu->Script->Console')
-        else:
-            RaiseErrorMessage('Error occured')
 
 class PioneerCaptureDialog(c4d.gui.GeDialog):
     def __init__(self):
@@ -489,7 +487,10 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 error_string += 'Time start cannot be more than time end'
             if time_start < 0 or time_end < 0:
                 error_string += 'Time cannot be less than 0 sec'
-            
+            max_time = self.current_doc.GetMaxTime().Get()
+            if time_end > max_time:
+                error_string += 'End time cannot be more than document max time ({} sec)'.format(round(max_time, 2))
+
             if len(error_string) > 0:
                 RaiseErrorMessage(error_string)
                 return False
@@ -617,21 +618,14 @@ class c4d_capture(c4d.plugins.CommandData):
             
         return names
 
-    # def getActiveObjectName(self):
-    #     active_object = self.doc.GetActiveObject()
-    #     try:
-    #         return active_object.GetName()
-    #     except AttributeError:
-    #         return None
-
     def getObjects(self, objectNames):
         objects = []
         for objectName in objectNames:
             obj = self.doc.SearchObject(objectName)
             if obj == None:
                 #print ("Object {0:s} doesn't exist".format(objectName))
-                RaiseErrorMessage("Object's name \"{0:s}\" doesn't exist".format(objectName))
-                return
+                raise GenerationError(console='Object with name \"{0:s}\" doesn\'t exist'.format(objectName),
+                    dialog='Not all objects with specified names exist')
             else:
                 objects.append(obj)
         return objects
@@ -662,11 +656,14 @@ class c4d_capture(c4d.plugins.CommandData):
         else:
             time_start = 0
             time_end = self.max_time
-        if (time_end - time_start) > 600:
-            raise GenerationError(console='Animation duration is more than 600 seconds ' \
-                '(start: {} sec, end: {} sec)'.format(time_start,time_end),
-                dialog='Animation duration cannot be more than 600 seconds (due to copter flight restrictions)')
         return time_start, time_end
+
+    def checkTimeRange(self, start, end):
+        if (end - start) > 600:
+            continue_generation = gui.QuestionDialog('Animation duration is {}, it\'s more than 10 minutes.\nContinue generation?'.format(end-start))
+            if not continue_generation:
+                raise GenerationError(console='Animation duration is more than 600 seconds ' \
+                    '(start: {} sec, end: {} sec)'.format(start,end))
 
     def updateView(self, time):
         self.shot_time = c4d.BaseTime(time)
@@ -959,6 +956,7 @@ class c4d_capture(c4d.plugins.CommandData):
         try:
             self.getDocInfo()
             time_start, time_end = self.getTimeRange()
+            self.checkTimeRange(time_start, time_end)
             self.updateView(time_start)
             self.initArrays()
             self.checkZeroAlt()
