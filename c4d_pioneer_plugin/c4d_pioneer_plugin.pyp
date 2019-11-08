@@ -135,8 +135,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.output_folder = None # по умолчанию папка вывода скриптов не выбрана (можно исправить на пользовательские опции)
 
     def Refresh(self, flush=True, force=False, initial=False, reload_=False):
-        current_doc = c4d.documents.GetActiveDocument()
-        title_text = "Project: %s" % current_doc.GetDocumentName()
+        self.current_doc = c4d.documents.GetActiveDocument()
+        title_text = "Project: %s" % self.current_doc.GetDocumentName()
         self.SetString(res.TEXT_DOCINFO, title_text)
 
     def getColorName(self, color_id):
@@ -197,10 +197,10 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_LON, self.GetString(res.EDIT_LON))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_PREFIX, self.GetString(res.EDIT_PREFIX))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET, self.GetString(res.EDIT_HEIGHT_OFFSET))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT, self.GetInt32(res.EDIT_OBJECT_COUNT))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT, self.GetString(res.EDIT_OBJECT_COUNT))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY, self.GetString(res.EDIT_MAX_VELOCITY))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_MIN_DISTANCE, self.GetString(res.EDIT_MIN_DISTANCE))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_ROTATION, self.GetInt32(res.EDIT_ROTATION))
+        Config.set(res.STR_CFG_SECTION, res.STR_CFG_ROTATION, self.GetString(res.EDIT_ROTATION))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH, self.GetString(res.EDIT_TEMPLATE_PATH))
         Config.set(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER, self.GetString(res.EDIT_OUTPUT_FOLDER))
         Config.write(cfgfile)
@@ -495,11 +495,12 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 return False
             else:
                 print(("\n\n{:-^60}\n\n"
+                    "File: {}\n"
                     "Params:\nStart color = {}, Points frequency = {} Hz, Colors frequency = {} Hz\n"
                     "Scale: x = {}, y = {}, z = {}, Rotation = {} deg\n"
                     "Height offset = {} m, Prefix = {}, Object count = {}, Min distance = {}, Max velocity = {}\n"
-                    "Template: {}\nOutput folder: {}\n").format('STARTING GENERATION', start_color,
-                    points_freq, colors_freq, scale_x, scale_y, scale_z, rotation, height_offset,
+                    "Template: {}\nOutput folder: {}\n").format('STARTING GENERATION', self.current_doc.GetDocumentName(),
+                    start_color, points_freq, colors_freq, scale_x, scale_y, scale_z, rotation, height_offset,
                     prefix, object_count, min_distance, max_velocity, template_path, output_folder))
                 # прокидываем значения в модуль для выполнения
                 self.plugin.initVars()
