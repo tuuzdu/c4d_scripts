@@ -935,7 +935,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
                 counter = 0
                 for k in range(0, points_count, int(freq_ratio)):
-                    data[i][k][2] += self.height_offset
+                    data[i][k][3] += self.height_offset
                     f.write(struct.pack('<fff', *[pos/100 for pos in data[i][k][1:4]]))
                     counter += 1
 
