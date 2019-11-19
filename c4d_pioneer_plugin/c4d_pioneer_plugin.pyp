@@ -467,6 +467,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
             # проверяем адекватность введённых значений
             if points_freq <= 0 or colors_freq <= 0:
                 error_string += 'Frequency cannot be less than 0 fps.\n'
+            if int(points_freq) != points_freq or int(colors_freq) != colors_freq:
+                error_string += 'Frequency must be integer'
             if points_freq > 20:
                 error_string += 'Points frequency cannot be more than 20 fps.\n'
             if colors_freq > 60:
@@ -738,7 +740,7 @@ class c4d_capture(c4d.plugins.CommandData):
                                         int(time * 100),   #I
                                         int(vecPosition.x), #h
                                         int(vecPosition.z), #h
-                                        int(vecPosition.y), #H
+                                        int(vecPosition.y + self.height_offset), #H
                                         int(vecRGB.x * 255), #B
                                         int(vecRGB.y * 255), #B
                                         int(vecRGB.z * 255)) #B
@@ -748,7 +750,7 @@ class c4d_capture(c4d.plugins.CommandData):
                                         (time * 100),
                                         (vecPosition.x),
                                         (vecPosition.z),
-                                        (vecPosition.y),
+                                        (vecPosition.y + self.height_offset),
                                         (vecRGB.x * 255),
                                         (vecRGB.y * 255),
                                         (vecRGB.z * 255))
@@ -759,7 +761,7 @@ class c4d_capture(c4d.plugins.CommandData):
             data = [time,
                     vecPosition.x,
                     vecPosition.z,
-                    vecPosition.y,
+                    vecPosition.y + self.height_offset,
                     int(vecRGB.x * 255),
                     int(vecRGB.y * 255),
                     int(vecRGB.z * 255)]
@@ -935,7 +937,6 @@ class c4d_capture(c4d.plugins.CommandData):
 
                 counter = 0
                 for k in range(0, points_count, int(freq_ratio)):
-                    data[i][k][3] += self.height_offset
                     f.write(struct.pack('<fff', *[pos/100 for pos in data[i][k][1:4]]))
                     counter += 1
 
