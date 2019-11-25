@@ -735,12 +735,13 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def getData(self, time, objNumber, vecPosition, vecRGB):
         data = []
+        vecPosition.y = vecPosition.y + self.height_offset
         try:
             s = struct.pack(self.STRUCT_FORMAT,
                                         int(time * 100),   #I
                                         int(vecPosition.x), #h
                                         int(vecPosition.z), #h
-                                        int(vecPosition.y + self.height_offset), #H
+                                        int(vecPosition.y), #H
                                         int(vecRGB.x * 255), #B
                                         int(vecRGB.y * 255), #B
                                         int(vecRGB.z * 255)) #B
@@ -750,7 +751,7 @@ class c4d_capture(c4d.plugins.CommandData):
                                         (time * 100),
                                         (vecPosition.x),
                                         (vecPosition.z),
-                                        (vecPosition.y + self.height_offset),
+                                        (vecPosition.y),
                                         (vecRGB.x * 255),
                                         (vecRGB.y * 255),
                                         (vecRGB.z * 255))
@@ -761,7 +762,7 @@ class c4d_capture(c4d.plugins.CommandData):
             data = [time,
                     vecPosition.x,
                     vecPosition.z,
-                    vecPosition.y + self.height_offset,
+                    vecPosition.y,
                     int(vecRGB.x * 255),
                     int(vecRGB.y * 255),
                     int(vecRGB.z * 255)]
@@ -859,7 +860,8 @@ class c4d_capture(c4d.plugins.CommandData):
             with open(fileName, "w") as f:
                 for item in self.points_array[i]:
                     f.write(item)
-                s = "local points_count = {0:d}\n" \
+                s = "\"\n" \
+                    "local points_count = {0:d}\n" \
                     "local str_format = \"{1:s}\"\n" \
                     "local origin_lat = {2:f}\n" \
                     "local origin_lon = {3:f}\n" \
