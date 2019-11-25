@@ -691,14 +691,39 @@ class c4d_capture(c4d.plugins.CommandData):
                 'local points  =  "'.format(self.time_step, self.max_points)
             self.points_array.append([s])
 
-    def checkZeroAlt(self):
+    def checkZeroAlt(self, time_start, time_end):
         initNonZeroAltObjects = []
+        nonZeroAtStart = False
+        nonZeroAtEnd = False
+        console = ''
+        self.updateView(time_start)
+        positionsArray = self.getPositions(self.objects)
         for i in range(self.object_count):
-            if int(self.positionsArray[i].y) > 0:
+            if int(positionsArray[i].y) > 0:
                 initNonZeroAltObjects.append(i)
         if initNonZeroAltObjects != []:
-            console = 'Copters with non zero altitude on start: ' + str(initNonZeroAltObjects).strip('[]')
-            raise GenerationError(console=console, dialog='Not all copters have zero altitude on start.')
+            console = 'Copters with non zero altitude at the start: ' + str(initNonZeroAltObjects).strip('[]')
+            nonZeroAtStart = True
+            initNonZeroAltObjects = []
+
+        self.updateView(time_end)
+        positionsArray = self.getPositions(self.objects)
+        for i in range(self.object_count):
+            if int(positionsArray[i].y) > 0:
+                initNonZeroAltObjects.append(i)
+        if initNonZeroAltObjects != []:
+            nonZeroAtEnd = True
+            console += '\nCopters with non zero altitude in the end: ' + str(initNonZeroAltObjects).strip('[]')
+
+        if nonZeroAtStart and nonZeroAtEnd:
+            dialog = 'Not all copters have zero altitude at the start and in the end.'
+        elif nonZeroAtStart:
+            dialog = 'Not all copters have zero altitude at the start.'
+        elif nonZeroAtEnd:
+            dialog = 'Not all copters have zero altitude in the end.'
+
+        if nonZeroAtStart or nonZeroAtEnd:
+            raise GenerationError(console=console, dialog=dialog)
 
     def getColor(self, obj):
         try:
@@ -962,7 +987,7 @@ class c4d_capture(c4d.plugins.CommandData):
             self.checkTimeRange(time_start, time_end)
             self.updateView(time_start)
             self.initArrays()
-            self.checkZeroAlt()
+            self.checkZeroAlt(time_start, time_end)
 
             dataArray = [[] for _ in range(self.object_count)]
             time = time_start
