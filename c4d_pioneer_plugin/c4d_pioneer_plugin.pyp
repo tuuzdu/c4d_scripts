@@ -117,6 +117,9 @@ def RaiseMessage(message):
 def RaiseErrorMessage(message):
     gui.MessageDialog(message, type=c4d.GEMB_ICONEXCLAMATION)
 
+def RaiseQuestionMessage(message):
+    return gui.QuestionDialog(message)
+
 class GenerationError(Exception):
     def __init__(self, console=None, dialog=None):
         if console is not None:
@@ -662,7 +665,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def checkTimeRange(self, start, end):
         if (end - start) > 600:
-            continue_generation = gui.QuestionDialog('Animation duration is {}, it\'s more than 10 minutes.\nContinue generation?'.format(end-start))
+            continue_generation = RaiseQuestionMessage('Animation duration is {}, it\'s more than 10 minutes.\nContinue generation?'.format(end-start))
             if not continue_generation:
                 raise GenerationError(console='Animation duration is more than 600 seconds ' \
                     '(start: {} sec, end: {} sec)'.format(start,end))
@@ -723,7 +726,9 @@ class c4d_capture(c4d.plugins.CommandData):
             dialog = 'Not all copters have zero altitude in the end.'
 
         if nonZeroAtStart or nonZeroAtEnd:
-            raise GenerationError(console=console, dialog=dialog)
+            continue_generation = RaiseQuestionMessage(dialog + '\nContinue generation?')
+            if not continue_generation:
+                raise GenerationError(console=console, dialog=dialog)
 
     def getColor(self, obj):
         try:
