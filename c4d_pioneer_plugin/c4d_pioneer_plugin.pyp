@@ -801,7 +801,7 @@ class c4d_capture(c4d.plugins.CommandData):
     def checkVelocity(self, time, time_end):
         for i in range(1, self.object_count):
             if int(self.positionsArray[i].y) > 0:#(self.height_offset):
-                distance = pow(((self.positionsArray[i].x - self.positionsArrayPrev[i].x) ** 2 + (self.positionsArray[i].y - self.positionsArrayPrev[i].y) ** 2 + (self.positionsArray[i].z - self.positionsArrayPrev[i].z) ** 2), 0.5) / 100 # /100 - convert cm to m
+                distance = math.sqrt((self.positionsArray[i].x - self.positionsArrayPrev[i].x) ** 2 + (self.positionsArray[i].y - self.positionsArrayPrev[i].y) ** 2 + (self.positionsArray[i].z - self.positionsArrayPrev[i].z) ** 2) / 100 # /100 - convert cm to m
                 velocity = distance / self.time_step
                 if velocity > self.max_velocity:
                     self.excess_frames_array[i] = 0
@@ -817,6 +817,7 @@ class c4d_capture(c4d.plugins.CommandData):
                         self.velocities_array.append(s)
                         self.excess_start_array[i] = 0
                         self.excess_frames_array[i] = 0
+                        self.excess_velocity_array[i] = self.max_velocity
                     else:
                         self.excess_frames_array[i] += 1
             if self.excess_start_array[i] != 0 and (time + self.time_step) > time_end:
@@ -826,6 +827,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 self.velocities_array.append(s)
                 self.excess_start_array[i] = 0
                 self.excess_frames_array[i] = 0
+                self.excess_velocity_array[i] = self.max_velocity
 
     def checkDistance(self, time, time_end):
         for j in range(self.object_count-1):
