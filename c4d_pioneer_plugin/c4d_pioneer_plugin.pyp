@@ -677,7 +677,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def initArrays(self):
         self.positionsArray = self.getPositions(self.objects)
-        self.positionsArrayPrev = self.positionsArray
+        self.positionsArrayPrev = [_ for _ in self.positionsArray]
         self.points_array = []
         self.collisions_array = []
         self.velocities_array = []
@@ -765,13 +765,14 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def getData(self, time, objNumber, vecPosition, vecRGB):
         data = []
-        vecPosition.y = vecPosition.y + self.height_offset
+        vecPositionWithOffset = c4d.Vector(0, 0, 0)
+        vecPositionWithOffset.y = vecPosition.y + self.height_offset
         try:
             s = struct.pack(self.STRUCT_FORMAT,
                                         int(time * 100),   #I
-                                        int(vecPosition.x), #h
-                                        int(vecPosition.z), #h
-                                        int(vecPosition.y), #H
+                                        int(vecPositionWithOffset.x), #h
+                                        int(vecPositionWithOffset.z), #h
+                                        int(vecPositionWithOffset.y), #H
                                         int(vecRGB.x * 255), #B
                                         int(vecRGB.y * 255), #B
                                         int(vecRGB.z * 255)) #B
@@ -779,23 +780,22 @@ class c4d_capture(c4d.plugins.CommandData):
             console = 'Data out of format range for object \'{}\':\nTime = {} / should be int\nx = {}, y = {}, z = {} / should be short\nred = {}, green = {}, blue = {} / should be unsigned char'.format(
                                         (self.prefix + str(objNumber)),
                                         (time * 100),
-                                        (vecPosition.x),
-                                        (vecPosition.z),
-                                        (vecPosition.y),
+                                        (vecPositionWithOffset.x),
+                                        (vecPositionWithOffset.z),
+                                        (vecPositionWithOffset.y),
                                         (vecRGB.x * 255),
                                         (vecRGB.y * 255),
                                         (vecRGB.z * 255))
             raise GenerationError(console=console, dialog='Data out of format range.')
-        if int(vecPosition.y) > 0:# (self.height_offset): # append if altitude greater than 0 in animation
-            s_xhex = binascii.hexlify(s)
-            self.points_array[objNumber].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
-            data = [time,
-                    vecPosition.x,
-                    vecPosition.z,
-                    vecPosition.y,
-                    int(vecRGB.x * 255),
-                    int(vecRGB.y * 255),
-                    int(vecRGB.z * 255)]
+        s_xhex = binascii.hexlify(s)
+        self.points_array[objNumber].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
+        data = [time,
+                vecPositionWithOffset.x,
+                vecPositionWithOffset.z,
+                vecPositionWithOffset.y,
+                int(vecRGB.x * 255),
+                int(vecRGB.y * 255),
+                int(vecRGB.z * 255)]
         return data
 
     def checkVelocity(self, time, time_end):
