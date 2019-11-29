@@ -800,7 +800,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def checkVelocity(self, time, time_end):
         for i in range(1, self.object_count):
-            if int(self.positionsArray[i].y) > 0:#(self.height_offset):
+            if int(self.positionsArray[i].y) > 0:
                 distance = math.sqrt((self.positionsArray[i].x - self.positionsArrayPrev[i].x) ** 2 + (self.positionsArray[i].y - self.positionsArrayPrev[i].y) ** 2 + (self.positionsArray[i].z - self.positionsArrayPrev[i].z) ** 2) / 100 # /100 - convert cm to m
                 velocity = distance / self.time_step
                 if velocity > self.max_velocity:
@@ -838,7 +838,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 x2 = self.positionsArray[k].x
                 y2 = self.positionsArray[k].y
                 z2 = self.positionsArray[k].z
-                if int(y1) > 0 and int(y2) > 0: #(self.height_offset) and int(y2) > (self.height_offset):
+                if int(y1) > 0 and int(y2) > 0:
                     distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100 # /100 - convert cm to m
                     if distance < self.min_distance:
                         if self.collision_start_array[j][k] == 0:
@@ -852,6 +852,14 @@ class c4d_capture(c4d.plugins.CommandData):
                             self.collisions_array.append(s)
                             self.collision_start_array[j][k] = 0
                             self.collision_distance_array[j][k] = self.min_distance
+                elif self.collision_start_array[j][k] != 0:
+                    start_time = self.collision_start_array[j][k]
+                    end_time = time - self.time_step
+                    s = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, self.collision_distance_array[j][k], start_time, end_time, int(start_time*self.fps), int(end_time*self.fps))
+                    self.collisions_array.append(s)
+                    self.collision_start_array[j][k] = 0
+                    self.collision_distance_array[j][k] = self.min_distance
+
                 if self.collision_start_array[j][k] != 0 and (time + self.time_step) > time_end:
                     start_time = self.collision_start_array[j][k]
                     end_time = time - self.time_step
@@ -859,6 +867,7 @@ class c4d_capture(c4d.plugins.CommandData):
                     self.collisions_array.append(s)
                     self.collision_start_array[j][k] = 0
                     self.collision_distance_array[j][k] = self.min_distance
+
     
     def printConsoleOutput(self):
         msg_collision = "\nTOTAL NUMBER OF COLLISIONS: {}".format(len(self.collisions_array))
