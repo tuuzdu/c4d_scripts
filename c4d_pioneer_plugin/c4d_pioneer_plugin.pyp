@@ -742,9 +742,7 @@ class c4d_capture(c4d.plugins.CommandData):
         return vecRGB
 
     def getPosition(self, obj):
-        #Get position
         vecPosition = obj.GetAbsPos()
-
         objScale = obj.GetAbsScale()
 
         # масштабирование пространственного вектора
@@ -753,13 +751,12 @@ class c4d_capture(c4d.plugins.CommandData):
         vecPosition.z = vecPosition.z * self.scale_z / abs(objScale.z)
         
         #поворот в пространстве вдоль оси OY (направлена вверх)
-        if self.rotation == 0 or self.rotation == 360:
+        if self.rotation > 0 and self.rotation < 360:
             rot_rad = self.rotation*math.pi/180
-            vecPosition.x = math.cos(rot_rad)*vecPosition.x - math.sin(rot_rad)*vecPosition.z
-            vecPosition.z = math.sin(rot_rad)*vecPosition.x + math.cos(rot_rad)*vecPosition.z
-
-        # подъём сцены на некоторую высоту
-        # vecPosition.y = vecPosition.y + self.height_offset
+            x_temp = math.cos(rot_rad)*vecPosition.x - math.sin(rot_rad)*vecPosition.z
+            z_temp = math.sin(rot_rad)*vecPosition.x + math.cos(rot_rad)*vecPosition.z
+            vecPosition.x = x_temp
+            vecPosition.z = z_temp
 
         return vecPosition
 
