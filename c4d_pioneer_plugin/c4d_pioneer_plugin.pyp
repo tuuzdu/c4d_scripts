@@ -763,35 +763,37 @@ class c4d_capture(c4d.plugins.CommandData):
     def getData(self, time, objNumber, vecPosition, vecRGB):
         data = []
         vecPositionWithOffset = c4d.Vector(vecPosition.x, vecPosition.y + self.height_offset, vecPosition.z)
+        x, y, z = vecPositionWithOffset.x, vecPositionWithOffset.z, vecPositionWithOffset.y
+        r, g, b = vecRGB.x, vecRGB.y, vecRGB.z
         try:
             s = struct.pack(self.STRUCT_FORMAT,
                                         int(time * 100),   #I
-                                        int(vecPositionWithOffset.x), #h
-                                        int(vecPositionWithOffset.z), #h
-                                        int(vecPositionWithOffset.y), #H
-                                        int(vecRGB.x * 255), #B
-                                        int(vecRGB.y * 255), #B
-                                        int(vecRGB.z * 255)) #B
+                                        int(x), #h
+                                        int(y), #h
+                                        int(z), #H
+                                        int(r * 255), #B
+                                        int(g * 255), #B
+                                        int(b * 255)) #B
         except struct.error:
-            console = 'Data out of format range for object \'{}\':\nTime = {} / should be int\nx = {}, y = {}, z = {} / should be short\nred = {}, green = {}, blue = {} / should be unsigned char'.format(
+            console = 'Data out of format range for object \'{}\':\nTime = {} / should be int\nx = {}, y = {} / should be short\nz = {} / red = should be unsigned short{}, green = {}, blue = {} / should be unsigned char'.format(
                                         (self.prefix + str(objNumber)),
                                         (time * 100),
-                                        (vecPositionWithOffset.x),
-                                        (vecPositionWithOffset.z),
-                                        (vecPositionWithOffset.y),
-                                        (vecRGB.x * 255),
-                                        (vecRGB.y * 255),
-                                        (vecRGB.z * 255))
+                                        (x),
+                                        (y),
+                                        (z),
+                                        (r * 255),
+                                        (g * 255),
+                                        (b * 255))
             raise GenerationError(console=console, dialog='Data out of format range.')
         s_xhex = binascii.hexlify(s)
         self.points_array[objNumber].append(''.join([r'\x' + s_xhex[i:i+2] for i in range(0, len(s_xhex), 2)]))
         data = [time,
-                vecPositionWithOffset.x,
-                vecPositionWithOffset.z,
-                vecPositionWithOffset.y,
-                int(vecRGB.x * 255),
-                int(vecRGB.y * 255),
-                int(vecRGB.z * 255)]
+                x,
+                y,
+                z,
+                int(r * 255),
+                int(g * 255),
+                int(b * 255)]
         return data
 
     def checkVelocity(self, time, time_end):
@@ -945,8 +947,8 @@ class c4d_capture(c4d.plugins.CommandData):
                 AnimationId = self.animation_id
                 PointsFreq = self.points_freq
                 ColorsFreq = self.colors_freq
-                PointsFormat = 4
-                ColorsFormat = 1
+                PointsFormat = struct.calcsize('f')
+                ColorsFormat = struct.calcsize('B')
                 PointsNumber = points_count//freq_ratio
                 ColorsNumber = points_count
                 TimeStart = data[i][0][0]
