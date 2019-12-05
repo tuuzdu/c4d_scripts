@@ -765,8 +765,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def getData(self, time, objNumber, vecPosition, vecRGB):
         data = []
-        vecPositionWithOffset = c4d.Vector(0, 0, 0)
-        vecPositionWithOffset.y = vecPosition.y + self.height_offset
+        vecPositionWithOffset = c4d.Vector(vecPosition.x, vecPosition.y + self.height_offset, vecPosition.z)
         try:
             s = struct.pack(self.STRUCT_FORMAT,
                                         int(time * 100),   #I
