@@ -586,6 +586,7 @@ class c4d_capture(c4d.plugins.CommandData):
         self.notakeoff = []
         self.module_path = None
         self.template_path = None
+        self.doc_unit = None
 
     def Register(self):
         help_string = 'Geoscan capture plugin: convert Cinema 4D' \
@@ -628,7 +629,6 @@ class c4d_capture(c4d.plugins.CommandData):
         for objectName in objectNames:
             obj = self.doc.SearchObject(objectName)
             if obj == None:
-                #print ("Object {0:s} doesn't exist".format(objectName))
                 raise GenerationError(console='Object with name \"{0:s}\" doesn\'t exist'.format(objectName),
                     dialog='Not all objects with specified names exist')
             else:
@@ -639,11 +639,24 @@ class c4d_capture(c4d.plugins.CommandData):
         vecPosition = []
         for obj in objects:
             vec = self.getPosition(obj)
-            # vec.y += self.height_offset
             vecPosition.append(vec)
         return vecPosition
         
     def getDocInfo(self):
+        # Table of c4d.DOCUMENT_DOCUNIT units relative to cm
+        # For example units[2] = 100 (1m = 100cm)
+        units_table = {
+            1:  100000,     #km
+            2:  100,        #m
+            3:  1,          #cm
+            4:  0.1,        #mm
+            5:  0.0001,     #micro
+            7:  160934.4,   #mile
+            8:  91.44,      #yard
+            9:  30.48,      #foot
+            10: 2.54        #inch
+        }
+
         self.doc = documents.GetActiveDocument()
         self.fps = self.doc.GetFps()
         self.max_time = self.doc.GetMaxTime().Get()
@@ -653,6 +666,11 @@ class c4d_capture(c4d.plugins.CommandData):
 
         self.objNames = self.getNames()
         self.objects = self.getObjects(self.objNames)
+
+        data = self.doc.GetDocumentData(c4d.DOCUMENTSETTINGS_DOCUMENT)
+        data_docunit = data.GetData(c4d.DOCUMENT_DOCUNIT)
+        scale, unit_index = data_docunit.GetUnitScale()
+        self.doc_unit = units_table[unit_index]
 
     def getTimeRange(self):
         if self.time_start is not None and self.time_end is not None:
@@ -743,12 +761,12 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def getPosition(self, obj):
         vecPosition = obj.GetAbsPos()
-        objScale = obj.GetAbsScale()
+        unit = self.doc_unit
 
         # масштабирование пространственного вектора
-        vecPosition.x = vecPosition.x * self.scale_x / abs(objScale.x)
-        vecPosition.y = vecPosition.y * self.scale_y / abs(objScale.y)
-        vecPosition.z = vecPosition.z * self.scale_z / abs(objScale.z)
+        vecPosition.x = vecPosition.x * self.scale_x * unit
+        vecPosition.y = vecPosition.y * self.scale_y * unit
+        vecPosition.z = vecPosition.z * self.scale_z * unit
         
         #поворот в пространстве вдоль оси OY (направлена вверх)
         if self.rotation > 0 and self.rotation < 360:
