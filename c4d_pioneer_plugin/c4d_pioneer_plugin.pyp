@@ -28,8 +28,8 @@ res = type('res', (), dict(
     # ID of the text that displays the active document's name.
     TEXT_DOCINFO = 1001, # Подпись. Сведения об открытом документе
     TEXT_OUTPUT_FOLDER = 1002, # Подпись. Путь до целевой папки
-    TEXT_PREFIX = 1003, # Подпись. Префиксом объектов
-    TEXT_OBJECT_COUNT = 1004, # Подпись. Количеством объектов
+    TEXT_PREFIX = 1003, # Подпись. Префикс объектов
+    TEXT_OBJECT_COUNT = 1004, # Подпись. Количество объектов
     TEXT_SCALE_GLOBAL = 1005, # Подпись. Глобальный пространственный масштаб
     TEXT_SCALE_PARTIAL= 1006, # Подпись. Частичный масштабом по x, y, z
     TEXT_ROTATION = 1007, # Подпись. Поворот в градусах
@@ -781,7 +781,7 @@ class c4d_capture(c4d.plugins.CommandData):
     def getData(self, time, objNumber, vecPosition, vecRGB):
         data = []
         vecPositionWithOffset = c4d.Vector(vecPosition.x, vecPosition.y + self.height_offset, vecPosition.z)
-        x, y, z = vecPositionWithOffset.x, vecPositionWithOffset.z, vecPositionWithOffset.y
+        x, y, z = vecPositionWithOffset.x, vecPositionWithOffset.z, vecPositionWithOffset.y # y<->z because in Cinema axis up is Y, but in autopilot it's Z
         r, g, b = vecRGB.x, vecRGB.y, vecRGB.z
         try:
             s = struct.pack(self.STRUCT_FORMAT,
@@ -955,7 +955,7 @@ class c4d_capture(c4d.plugins.CommandData):
             if data[i] == []:
                 self.notakeoff.append(i)
                 continue
-            points_count = len(self.points_array[i])-2
+            points_count = len(data[i])
             freq_ratio = self.colors_freq/self.points_freq
             fileName = self.getBinsFolder() + self.objNames[i] + ".bin"
             with open(fileName, "wb") as f:
@@ -967,7 +967,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 ColorsFreq = self.colors_freq
                 PointsFormat = struct.calcsize('f')
                 ColorsFormat = struct.calcsize('B')
-                PointsNumber = points_count//freq_ratio
+                PointsNumber = math.ceil(points_count/freq_ratio)
                 ColorsNumber = points_count
                 TimeStart = data[i][0][0]
                 TimeEnd = data[i][-1][0]
