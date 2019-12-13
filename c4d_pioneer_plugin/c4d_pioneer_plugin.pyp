@@ -11,78 +11,67 @@ import struct
 import binascii
 import ConfigParser
 
-#по поводу импорта конфиг парсера:
-#https://stackoverflow.com/questions/5055042/whats-the-best-practice-using-a-settings-file-in-python
-#https://wiki.python.org/moin/ConfigParserExamples
+PLUGIN_ID = 1072398
 
-# This number is the unique ID that is assigned to the plugin. Every
-# plugin must have a unique ID which can be obtained from
-# http://plugincafe.com/forum/developer.asp
-PLUGIN_ID = 1072398 # пока что это ненастоящий ID
-
-# This structure will contain all of our resource symbols that we
-# use in the TaskListDialog. Prevents pollution of the global scope.
-# We can use type() to create a new type from a dictionary which will
-# allow us to use attribute-access instead of bracket syntax.
+#Resource symbols
 res = type('res', (), dict(
-    # ID of the text that displays the active document's name.
-    TEXT_DOCINFO = 1001, # Подпись. Сведения об открытом документе
-    TEXT_OUTPUT_FOLDER = 1002, # Подпись. Путь до целевой папки
-    TEXT_PREFIX = 1003, # Подпись. Префикс объектов
-    TEXT_OBJECT_COUNT = 1004, # Подпись. Количество объектов
-    TEXT_SCALE_GLOBAL = 1005, # Подпись. Глобальный пространственный масштаб
-    TEXT_SCALE_PARTIAL= 1006, # Подпись. Частичный масштаб по x, y, z
-    TEXT_ROTATION = 1007, # Подпись. Поворот в градусах
-    TEXT_HEIGHT_OFFSET= 1008, # Подпись. Сдвиг по высоте
-    TEXT_POINTS_FREQ = 1009, # Подпись. Частота точек
-    TEXT_COLORS_FREQ = 1010, # Подпись. Частота цветов
-    TEXT_TEMPLATE_PATH= 1011, # Подпись. Выбор файла шаблона
-    TEXT_LAT_LON_PARTIAL=1012, # Подпись. Точка GPS
-    TEXT_MAX_VELOCITY = 1013, # Подпись. Максимальная скорость
-    TEXT_MIN_DISTANCE = 1014, # Подпись. Минимальная дистанция
-    TEXT_ANIMATION_ID = 1015, # Подпись. ID анимации
-    TEXT_START_COLOR = 1016, # Подпись. Цвет светодиодов на предстартовой подготовке
-    TEXT_CFG_FILE = 1017, # Подпись. Конфигурационный файл
-    TEXT_TIME = 1018, # Подпись. Время
-    
-    
-    # This is the ID for the group that contains the task widgets.
-    GROUP_TASKS = 2000,
+    #ID's of the text fields
+    TEXT_DOCINFO = 1001,
+    TEXT_OUTPUT_FOLDER = 1002,
+    TEXT_PREFIX = 1003,
+    TEXT_OBJECT_COUNT = 1004,
+    TEXT_SCALE_GLOBAL = 1005,
+    TEXT_SCALE_PARTIAL= 1006,
+    TEXT_ROTATION = 1007,
+    TEXT_HEIGHT_OFFSET= 1008,
+    TEXT_POINTS_FREQ = 1009,
+    TEXT_COLORS_FREQ = 1010,
+    TEXT_TEMPLATE_PATH= 1011,
+    TEXT_LAT_LON_PARTIAL=1012,
+    TEXT_MAX_VELOCITY = 1013,
+    TEXT_MIN_DISTANCE = 1014,
+    TEXT_ANIMATION_ID = 1015,
+    TEXT_START_COLOR = 1016,
+    TEXT_CFG_FILE = 1017,
+    TEXT_TIME = 1018,
 
-    BUTTON_OUTPUT_FOLDER = 3000, # Идентификатор кнопки для открытия целевой папки для скриптов
-    BUTTON_TEMPLATE_PATH = 3001, # Идентификатор кнопки для выбора шаблона c4d_animation.lua
-    BUTTON_GENERATE = 3002, # Идентификатор кнопки для запуска генерации скриптов
-    BUTTON_LOAD_CONFIG = 3003, # Кнопка загрузки конфигурации
-    BUTTON_SAVE_CONFIG= 3004, # Кнопка сохранения конфигурации
+    #ID's of the buttons
+    BUTTON_OUTPUT_FOLDER = 3000,
+    BUTTON_TEMPLATE_PATH = 3001,
+    BUTTON_GENERATE = 3002,
+    BUTTON_LOAD_CONFIG = 3003,
+    BUTTON_SAVE_CONFIG= 3004,
     
-    EDIT_OUTPUT_FOLDER = 4000, # Идентификатор текстового поля, в котором хранится путь до целевой папки
-    EDIT_PREFIX = 4001, # Идентификатор текстового поля с префиксом объектов
-    EDIT_OBJECT_COUNT = 4002, # Идентификатор текстового поля с количеством объектов
-    EDIT_SCALE_GLOBAL = 4003, # Текстовое поле с глобальным пространственным масштабом
-    EDIT_SCALE_X= 4004, # Текстовое поле с масштабом по x
-    EDIT_SCALE_Y= 4005, # Текстовое поле с масштабом по y
-    EDIT_SCALE_Z= 4006, # Текстовое поле с масштабом по z
-    EDIT_ROTATION = 4007, # Текстовое поле, редактирующее поворот в градусах
-    EDIT_HEIGHT_OFFSET= 4008, # Текстовое поле. Сдвиг по высоте
-    EDIT_POINTS_FREQ = 4009, # Текстовое поле с частотой точек в герцах
-    EDIT_COLORS_FREQ = 4010, # Текстовое поле с частотой цветов в герцах
-    EDIT_TEMPLATE_PATH = 4011, # Идентификатор текстового поля, в котором хранится путь до шаблона c4d_animation.lua
+    #ID's of the edit fields
+    EDIT_OUTPUT_FOLDER = 4000,
+    EDIT_PREFIX = 4001,
+    EDIT_OBJECT_COUNT = 4002,
+    EDIT_SCALE_GLOBAL = 4003,
+    EDIT_SCALE_X= 4004,
+    EDIT_SCALE_Y= 4005,
+    EDIT_SCALE_Z= 4006,
+    EDIT_ROTATION = 4007,
+    EDIT_HEIGHT_OFFSET= 4008,
+    EDIT_POINTS_FREQ = 4009,
+    EDIT_COLORS_FREQ = 4010,
+    EDIT_TEMPLATE_PATH = 4011,
     EDIT_LAT = 4012,
     EDIT_LON = 4013,
-    EDIT_MAX_VELOCITY = 4014, # Максимальная скорость при проверке объектов
-    EDIT_MIN_DISTANCE = 4015, # Минимальная дистанция между дронами при проверке
-    EDIT_ANIMATION_ID = 4016, # ID анимации
-    EDIT_START_COLOR = 4017, # Стартовый цвет светодиодов
-    EDIT_TIME_START = 4018, # Время начала
-    EDIT_TIME_END = 4019, # Время конца
+    EDIT_MAX_VELOCITY = 4014,
+    EDIT_MIN_DISTANCE = 4015,
+    EDIT_ANIMATION_ID = 4016,
+    EDIT_START_COLOR = 4017,
+    EDIT_TIME_START = 4018,
+    EDIT_TIME_END = 4019,
     
+    #ID's of the colors
     COLOR_RED = 5000,
     COLOR_ORANGE = 5001,
     COLOR_YELLOW = 5002,
     COLOR_CYAN = 5003,
     COLOR_PURPLE = 5004,
     
-    # строковые константы
+    #String constants
     STR_CFG_SECTION = "PioneerCapture",
     STR_CFG_START_COLOR = "StartColor",
     STR_CFG_ANIMATION_ID = "AnimationId",
@@ -104,12 +93,7 @@ res = type('res', (), dict(
 
 ))
 
-# класс необходим для создания GUI-окна
-# см. пример:
-# https://github.com/PluginCafe/py-cinema4dsdk/blob/master/gui/task-list.pyp
-# https://developers.maxon.net/docs/Cinema4DPythonSDK/html/modules/c4d.gui/GeDialog/index.html
-# для работы с файловой системой:
-# https://developers.maxon.net/docs/Cinema4DPythonSDK/html/modules/c4d.storage/index.html
+#Generic handlers
 
 def RaiseMessage(message):
     gui.MessageDialog(message)
@@ -130,16 +114,21 @@ class GenerationError(Exception):
         if dialog is not None:
             RaiseErrorMessage(dialog + '\n\nСheck console for more details.\nMain menu->Script->Console')
 
+
+#Class for GUI
+
 class PioneerCaptureDialog(c4d.gui.GeDialog):
     def __init__(self):
         self.current_doc = c4d.documents.GetActiveDocument()
-        self.output_folder = None # по умолчанию папка вывода скриптов не выбрана (можно исправить на пользовательские опции)
+        self.output_folder = None
 
+    #Refreshes doc info if doc is changed
     def Refresh(self, flush=True, force=False, initial=False, reload_=False):
         self.current_doc = c4d.documents.GetActiveDocument()
         title_text = "Project: %s" % self.current_doc.GetDocumentName()
         self.SetString(res.TEXT_DOCINFO, title_text)
 
+    #
     def getColorName(self, color_id):
         if color_id == res.COLOR_RED:
             return "red"
@@ -176,21 +165,15 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         if color == "purple":
             return 300
 
-    def setConfigFieldValue(self, field, value):
-        try:
-            self.config.set(res.STR_CFG_SECTION, field, value)
-        except:
-            pass
+    #Save config to file functions
 
-    # функция для сохранения настроек в конфигурационном файле
     def saveConfig(self):
         filename = c4d.storage.LoadDialog(title="Choose template file", flags=c4d.FILESELECT_SAVE, def_path=self.plugin.module_path, def_file="config.ini")
         if filename is None:
             return
         cfgfile = open(filename, 'w')
-
-        # add the settings to the structure of the file, and lets write it out...
         self.config = ConfigParser.ConfigParser()
+
         self.config.add_section(res.STR_CFG_SECTION)
         self.setConfigFieldValue(res.STR_CFG_START_COLOR, self.getColorName(self.GetLong(res.EDIT_START_COLOR)))
         self.setConfigFieldValue(res.STR_CFG_POINTS_FREQ, self.GetString(res.EDIT_POINTS_FREQ))
@@ -208,8 +191,17 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.setConfigFieldValue(res.STR_CFG_ROTATION, self.GetString(res.EDIT_ROTATION))
         self.setConfigFieldValue(res.STR_CFG_TEMPLATE_PATH, self.GetString(res.EDIT_TEMPLATE_PATH))
         self.setConfigFieldValue(res.STR_CFG_OUTPUT_FOLDER, self.GetString(res.EDIT_OUTPUT_FOLDER))
+
         self.config.write(cfgfile)
         cfgfile.close()
+
+    def setConfigFieldValue(self, field, value):
+        try:
+            self.config.set(res.STR_CFG_SECTION, field, value)
+        except:
+            pass
+
+    #Load config from file functions
 
     def loadConfigError(self, field, e):
         if e == 'NoOptionError':
@@ -237,25 +229,24 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 result += self.loadConfigError(field[1], type(e).__name__)
         return result
 
-    # функция для загрузки настроек из конфигурационного файла
     def loadConfig(self, filename):
         fields = (
-            (res.EDIT_START_COLOR, res.STR_CFG_START_COLOR),
-            (res.EDIT_POINTS_FREQ, res.STR_CFG_POINTS_FREQ),
-            (res.EDIT_COLORS_FREQ, res.STR_CFG_COLORS_FREQ),
-            (res.EDIT_SCALE_X, res.STR_CFG_SCALE_X),
-            (res.EDIT_SCALE_Y, res.STR_CFG_SCALE_Y),
-            (res.EDIT_SCALE_Z, res.STR_CFG_SCALE_Z),
-            (res.EDIT_LAT, res.STR_CFG_LAT),
-            (res.EDIT_LON, res.STR_CFG_LON),
-            (res.EDIT_PREFIX, res.STR_CFG_PREFIX),
-            (res.EDIT_OUTPUT_FOLDER, res.STR_CFG_OUTPUT_FOLDER),
-            (res.EDIT_TEMPLATE_PATH, res.STR_CFG_TEMPLATE_PATH),
-            (res.EDIT_MAX_VELOCITY, res.STR_CFG_MAX_VELOCITY),
-            (res.EDIT_MIN_DISTANCE, res.STR_CFG_MIN_DISTANCE),
-            (res.EDIT_HEIGHT_OFFSET, res.STR_CFG_HEIGHT_OFFSET),
-            (res.EDIT_ROTATION, res.STR_CFG_ROTATION),
-            (res.EDIT_OBJECT_COUNT, res.STR_CFG_OBJECT_COUNT)
+            (res.EDIT_START_COLOR,      res.STR_CFG_START_COLOR),
+            (res.EDIT_POINTS_FREQ,      res.STR_CFG_POINTS_FREQ),
+            (res.EDIT_COLORS_FREQ,      res.STR_CFG_COLORS_FREQ),
+            (res.EDIT_SCALE_X,          res.STR_CFG_SCALE_X),
+            (res.EDIT_SCALE_Y,          res.STR_CFG_SCALE_Y),
+            (res.EDIT_SCALE_Z,          res.STR_CFG_SCALE_Z),
+            (res.EDIT_LAT,              res.STR_CFG_LAT),
+            (res.EDIT_LON,              res.STR_CFG_LON),
+            (res.EDIT_PREFIX,           res.STR_CFG_PREFIX),
+            (res.EDIT_OUTPUT_FOLDER,    res.STR_CFG_OUTPUT_FOLDER),
+            (res.EDIT_TEMPLATE_PATH,    res.STR_CFG_TEMPLATE_PATH),
+            (res.EDIT_MAX_VELOCITY,     res.STR_CFG_MAX_VELOCITY),
+            (res.EDIT_MIN_DISTANCE,     res.STR_CFG_MIN_DISTANCE),
+            (res.EDIT_HEIGHT_OFFSET,    res.STR_CFG_HEIGHT_OFFSET),
+            (res.EDIT_ROTATION,         res.STR_CFG_ROTATION),
+            (res.EDIT_OBJECT_COUNT,     res.STR_CFG_OBJECT_COUNT)
         )
 
         self.config = ConfigParser.ConfigParser()
@@ -267,8 +258,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         result = self.setGuiFieldsValues(fields)
         if result is not '':
             RaiseErrorMessage('In \'{}\':\n{}'.format(filename, result))
-
-    # по сути, загрузка конфигурации по-умолчанию заполняет интерфейс необходимыми значениями     
+ 
     def loadConfigDefault(self):
         if self.plugin.default_config_path is not None:
             self.loadConfig(self.plugin.default_config_path)      
@@ -281,6 +271,11 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         filename = c4d.storage.LoadDialog(title="Choose template file", flags=c4d.FILESELECT_LOAD, def_path=self.plugin.module_path, def_file="default.ini")
         if filename is not None:
             self.loadConfig(filename)
+
+
+    # GUI layout
+
+    #Functions for adding concrete sections
 
     def addHeaderSection(self):
         self.GroupBegin(0, c4d.BFH_LEFT | c4d.BFH_SCALEFIT, cols=4, rows=1)
@@ -390,6 +385,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.AddEditText(res.EDIT_TIME_END, c4d.BFH_LEFT | c4d.BFH_SCALEFIT)
         self.GroupEnd()
 
+    #Main function to create window layout
     def CreateLayout(self):
         self.SetTitle('Geoscan Drone Air Show')
         
@@ -433,7 +429,8 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         self.GroupEnd()
         self.LayoutChanged(c4d.ID_SCROLLGROUP_STATUSBAR_EXTLEFT_GROUP)
         return True
-        
+    
+    #Function to react on user clicks
     def Command(self, param, bc):
         if param == res.BUTTON_OUTPUT_FOLDER:
             filename = c4d.storage.LoadDialog(title="Choose folder to store files", flags=c4d.FILESELECT_DIRECTORY)
@@ -558,24 +555,26 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
                 return True
 
         return False
-        
+    
+    #Function to react to Cinema 4D core messages
     def CoreMessage(self, kind, bc):
         r""" Responds to what's happening inside of Cinema 4D. In this
         case, we're looking to see if the active document has changed. """
 
-        # One case this message is being sent is when the active
-        # document has changed.
+        # Refresh if document has changed event
         if kind == c4d.EVMSG_DOCUMENTRECALCULATED:
             self.Refresh()
 
         return True
 
-# данный класс регистрирует плагин и создаёт команду конвертации движения объектов в LUA-скрипт для квадрокоптеров
+
+# Class in which realized all logic after button "Generate" pushed
+
 class c4d_capture(c4d.plugins.CommandData):
     r""" The purpose of this plugin is to convert
     Cinema 4D scenes into Geoscan "Pioneer" drone code. """
     
-    STRUCT_FORMAT = "IhhHBBB"
+    STRUCT_FORMAT = "IhhHBBB" #Format of data to write into scripts
     POINTS_FOLDER_NAME = "./points/"
     LUA_FOLDER_NAME = "./scripts/"
     BIN_FOLDER_NAME = "./bins/"
@@ -609,22 +608,23 @@ class c4d_capture(c4d.plugins.CommandData):
         self.template_path = None
         self.doc_unit = None
 
+    #Function registers plugin
     def Register(self):
         help_string = 'Geoscan capture plugin: convert Cinema 4D' \
                       'scene into drone code.'
                       
-        # подгружаем иконку для плагина, если это возможно
+        # Load icon
         ico = c4d.bitmaps.BaseBitmap()
         if ico.InitWith(self.module_path + "\\geoscan.ico")[0] != c4d.IMAGERESULT_OK:
-            ico = None # если не вышло подгрузить, иконку не передаём
+            ico = None
 
         return c4d.plugins.RegisterCommandPlugin(
-                PLUGIN_ID,                   # The Plugin ID, obviously
-                "Geoscan Drone Air Show",  # The name of the plugin
-                c4d.PLUGINFLAG_COMMAND_HOTKEY,    # Sort of options
-                ico,                        # Icon, Geoscan here
-                help_string,                 # The help text for the command
-                self,                        # The plugin implementation
+                PLUGIN_ID,                      # The Plugin ID
+                "Geoscan Drone Air Show",       # The name of the plugin
+                c4d.PLUGINFLAG_COMMAND_HOTKEY,  # Sort of options
+                ico,                            # Icon
+                help_string,                    # The help text for the command
+                self,                           # The plugin implementation
         )
 
     def getPointsFolder(self):
@@ -773,7 +773,6 @@ class c4d_capture(c4d.plugins.CommandData):
         try:
             objMaterial = obj.GetTag(Ttexture).GetMaterial()
         except AttributeError:
-            # print ("First object tag must be Material")
             RaiseErrorMessage("Didn't find object's ({0:s}) tag \"Material\"".format(self.obj.GetName()))
             return
         vecRGB = objMaterial.GetAverageColor(c4d.CHANNEL_COLOR) # получаем RGB
@@ -837,7 +836,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
     def checkVelocity(self, time, time_end):
         for i in range(1, self.object_count):
-            if int(self.positionsArray[i].y) > 0:
+            if int(self.positionsArray[i].y) > 0: # Check only if the drone took off
                 distance = math.sqrt((self.positionsArray[i].x - self.positionsArrayPrev[i].x) ** 2 + (self.positionsArray[i].y - self.positionsArrayPrev[i].y) ** 2 + (self.positionsArray[i].z - self.positionsArrayPrev[i].z) ** 2) / 100 # /100 - convert cm to m
                 velocity = distance / self.time_step
                 if velocity > self.max_velocity:
@@ -846,7 +845,7 @@ class c4d_capture(c4d.plugins.CommandData):
                         self.excess_start_array[i] = time
                     if velocity > self.excess_velocity_array[i]:
                         self.excess_velocity_array[i] = velocity
-                elif self.excess_start_array[i] != 0:
+                elif self.excess_start_array[i] != 0: # Register excess if it ended
                     if self.excess_frames_array[i] > int(self.colors_freq):
                         start_time = self.excess_start_array[i]
                         end_time = time - self.excess_frames_array[i]*self.time_step
@@ -857,7 +856,7 @@ class c4d_capture(c4d.plugins.CommandData):
                         self.excess_velocity_array[i] = self.max_velocity
                     else:
                         self.excess_frames_array[i] += 1
-            if self.excess_start_array[i] != 0 and (time + self.time_step) > time_end:
+            if self.excess_start_array[i] != 0 and (time + self.time_step) > time_end: # If excess persisted untill end of animation
                 start_time = self.excess_start_array[i]
                 end_time = time - self.excess_frames_array[i]*self.time_step
                 s = "Velocity of\t{:03d}\tis up to\t{:.2f} m/s\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(i, self.excess_velocity_array[i], start_time, end_time, int(start_time*self.fps), int(end_time*self.fps))
@@ -875,21 +874,21 @@ class c4d_capture(c4d.plugins.CommandData):
                 x2 = self.positionsArray[k].x
                 y2 = self.positionsArray[k].y
                 z2 = self.positionsArray[k].z
-                if int(y1) > 0 and int(y2) > 0:
+                if int(y1) > 0 and int(y2) > 0: # Check only if both drones took off
                     distance = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) / 100 # /100 - convert cm to m
                     if distance < self.min_distance:
                         if self.collision_start_array[j][k] == 0:
                             self.collision_start_array[j][k] = time
                         if distance < self.collision_distance_array[j][k]:
                             self.collision_distance_array[j][k] = distance
-                    elif self.collision_start_array[j][k] != 0:
+                    elif self.collision_start_array[j][k] != 0: # Register collision if it ended
                             start_time = self.collision_start_array[j][k]
                             end_time = time - self.time_step
                             s = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, self.collision_distance_array[j][k], start_time, end_time, int(start_time*self.fps), int(end_time*self.fps))
                             self.collisions_array.append(s)
                             self.collision_start_array[j][k] = 0
                             self.collision_distance_array[j][k] = self.min_distance
-                elif self.collision_start_array[j][k] != 0:
+                elif self.collision_start_array[j][k] != 0: # If collision persisted untill landing
                     start_time = self.collision_start_array[j][k]
                     end_time = time - self.time_step
                     s = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, self.collision_distance_array[j][k], start_time, end_time, int(start_time*self.fps), int(end_time*self.fps))
@@ -897,7 +896,7 @@ class c4d_capture(c4d.plugins.CommandData):
                     self.collision_start_array[j][k] = 0
                     self.collision_distance_array[j][k] = self.min_distance
 
-                if self.collision_start_array[j][k] != 0 and (time + self.time_step) > time_end:
+                if self.collision_start_array[j][k] != 0 and (time + self.time_step) > time_end: # If collision persisted untill end of animation
                     start_time = self.collision_start_array[j][k]
                     end_time = time - self.time_step
                     s = "Collision between:\t{:03d}\tand\t{:03d}\tMin distance: {:.2f} m\tTime: {:.2f}-{:.2f} s\tFrames: {}-{}".format(j, k, self.collision_distance_array[j][k], start_time, end_time, int(start_time*self.fps), int(end_time*self.fps))
@@ -909,21 +908,21 @@ class c4d_capture(c4d.plugins.CommandData):
     def printConsoleOutput(self):
         msg_collision = "\nTOTAL NUMBER OF COLLISIONS: {}".format(len(self.collisions_array))
         msg_velocities = "\nTOTAL NUMBER OF VELOCITY EXCESS: {}".format(len(self.velocities_array))
-        print "\n"
+        print('\n')
         if self.notakeoff:
             print('Drones ' + str(self.notakeoff).strip('[]') + ' have no takeoff. This files are not generated.\n')
         if len(self.collisions_array) > 0:
             for s in self.collisions_array:
-                print s
-            print "\n"
+                print(s)
+            print('\n')
             RaiseErrorMessage(msg_collision)
         if len(self.velocities_array) > 0:
             for s in self.velocities_array:
-                print s
-            print "\n"
+                print(s)
+            print('\n')
             RaiseErrorMessage(msg_velocities)
-        print msg_collision
-        print msg_velocities
+        print(msg_collision)
+        print(msg_velocities)
 
     def writeScriptFile(self):
         if not os.path.exists(os.path.dirname(self.getPointsFolder())):
@@ -953,23 +952,22 @@ class c4d_capture(c4d.plugins.CommandData):
         if not os.path.exists(os.path.dirname(self.getLuaFolder())):
             try:
                 os.makedirs(os.path.dirname(self.getLuaFolder()))
-            except OSError as exc: # Guard against race condition
-                if exc.errno != errno.EEXIST:
+            except OSError as e:
+                if e.errno != errno.EEXIST:
                     raise
 
         for i in range(self.object_count):
             pointsFileName = self.getPointsFolder() + self.objNames[i] + ".lua"
             with open(pointsFileName, "r") as f_points, open(self.template_path, "r") as f_temp, open(self.getLuaFolder() + self.objNames[i] + ".lua", "w") as f:
                 f.write(f_points.read())
-                #f.write("\n")
                 f.write(f_temp.read())
 
     def writeBinFile(self, data):
         if not os.path.exists(os.path.dirname(self.getBinsFolder())):
             try:
                 os.makedirs(os.path.dirname(self.getBinsFolder()))
-            except OSError as exc: # Guard against race condition
-                if exc.errno != errno.EEXIST:
+            except OSError as e:
+                if e.errno != errno.EEXIST:
                     raise
 
         for i in range(self.object_count):
@@ -980,8 +978,9 @@ class c4d_capture(c4d.plugins.CommandData):
             freq_ratio = self.colors_freq/self.points_freq
             fileName = self.getBinsFolder() + self.objNames[i] + ".bin"
             with open(fileName, "wb") as f:
+                # Control sequence
                 f.write(b'\xaa\xbb\xcc\xdd')
-
+                # Header
                 Version = 1
                 AnimationId = self.animation_id
                 PointsFreq = self.points_freq
@@ -997,7 +996,7 @@ class c4d_capture(c4d.plugins.CommandData):
                 AltOrigin = 0.0
                 HeaderFormat = '<BBBBBBHHfffff'
                 size = struct.calcsize(HeaderFormat)
-
+                #Write header
                 f.write(struct.pack(HeaderFormat,   Version,
                                                     AnimationId,
                                                     PointsFreq,
@@ -1012,18 +1011,20 @@ class c4d_capture(c4d.plugins.CommandData):
                                                     OriginLon,
                                                     AltOrigin))
 
+                # Points data starts at offset of 100 bytes
                 for _ in range(size + 4, 100):
                     f.write(b'\x00')
-
+                # Write points
                 counter = 0
                 for k in range(0, points_count, int(freq_ratio)):
                     f.write(struct.pack('<fff', *[pos/100 for pos in data[i][k][1:4]])) # /100 - convert cm to m 
                     counter += 1
 
+                # Colors data starts at offset of 21700 bytes
                 if counter < 1800:
                     for _ in range(counter, 1800):
                         f.write(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-
+                # Write colors
                 for k in range(points_count):
                     f.write(struct.pack('<BBB', *data[i][k][4:7]))
 
@@ -1044,6 +1045,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
             dataArray = [[] for _ in range(self.object_count)]
             time = time_start
+            #Cycle that updates Cinema 4D view on every frame, gets drones data and check it for correctness
             while time <= time_end:
                 self.updateView(time)
                 self.positionsArrayPrev = [_ for _ in self.positionsArray]
@@ -1069,17 +1071,20 @@ class c4d_capture(c4d.plugins.CommandData):
             self.finish()
         except GenerationError:
             return
-                
+
+    # Main dialog
     @property
     def dialog(self):
-        if not hasattr(self, '_dialog'): # диалог единственный на весь модуль
+        if not hasattr(self, '_dialog'):
             self._dialog = PioneerCaptureDialog()
             self._dialog.plugin = self
         return self._dialog
 
+    # Called when the plugin is selected by the user
     def Execute(self, doc):
         return self.dialog.Open(c4d.DLG_TYPE_ASYNC, PLUGIN_ID)
 
+    # Called by Cinema 4D when loading a layout and restoring async dialogs
     def RestoreLayout(self, secret):
         return self.dialog.Restore(PLUGIN_ID, secret)
 
