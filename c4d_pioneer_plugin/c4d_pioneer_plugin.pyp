@@ -31,7 +31,7 @@ res = type('res', (), dict(
     TEXT_PREFIX = 1003, # Подпись. Префикс объектов
     TEXT_OBJECT_COUNT = 1004, # Подпись. Количество объектов
     TEXT_SCALE_GLOBAL = 1005, # Подпись. Глобальный пространственный масштаб
-    TEXT_SCALE_PARTIAL= 1006, # Подпись. Частичный масштабом по x, y, z
+    TEXT_SCALE_PARTIAL= 1006, # Подпись. Частичный масштаб по x, y, z
     TEXT_ROTATION = 1007, # Подпись. Поворот в градусах
     TEXT_HEIGHT_OFFSET= 1008, # Подпись. Сдвиг по высоте
     TEXT_POINTS_FREQ = 1009, # Подпись. Частота точек
@@ -176,6 +176,12 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         if color == "purple":
             return 300
 
+    def setConfigFieldValue(self, field, value):
+        try:
+            self.config.set(res.STR_CFG_SECTION, field, value)
+        except:
+            pass
+
     # функция для сохранения настроек в конфигурационном файле
     def saveConfig(self):
         filename = c4d.storage.LoadDialog(title="Choose template file", flags=c4d.FILESELECT_SAVE, def_path=self.plugin.module_path, def_file="config.ini")
@@ -184,31 +190,28 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         cfgfile = open(filename, 'w')
 
         # add the settings to the structure of the file, and lets write it out...
-        Config = ConfigParser.ConfigParser()
-        Config.add_section(res.STR_CFG_SECTION)
-        
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_START_COLOR, self.getColorName(self.GetLong(res.EDIT_START_COLOR)))
-        # Config.set(res.STR_CFG_SECTION, res.STR_CFG_ANIMATION_ID, self.GetInt32(res.EDIT_ANIMATION_ID))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ, self.GetString(res.EDIT_POINTS_FREQ))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ, self.GetString(res.EDIT_COLORS_FREQ))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X, self.GetString(res.EDIT_SCALE_X))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y, self.GetString(res.EDIT_SCALE_Y))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z, self.GetString(res.EDIT_SCALE_Z))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_LAT, self.GetString(res.EDIT_LAT))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_LON, self.GetString(res.EDIT_LON))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_PREFIX, self.GetString(res.EDIT_PREFIX))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET, self.GetString(res.EDIT_HEIGHT_OFFSET))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT, self.GetString(res.EDIT_OBJECT_COUNT))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY, self.GetString(res.EDIT_MAX_VELOCITY))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_MIN_DISTANCE, self.GetString(res.EDIT_MIN_DISTANCE))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_ROTATION, self.GetString(res.EDIT_ROTATION))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH, self.GetString(res.EDIT_TEMPLATE_PATH))
-        Config.set(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER, self.GetString(res.EDIT_OUTPUT_FOLDER))
-        Config.write(cfgfile)
+        self.config = ConfigParser.ConfigParser()
+        self.config.add_section(res.STR_CFG_SECTION)
+        self.setConfigFieldValue(res.STR_CFG_START_COLOR, self.getColorName(self.GetLong(res.EDIT_START_COLOR)))
+        self.setConfigFieldValue(res.STR_CFG_POINTS_FREQ, self.GetString(res.EDIT_POINTS_FREQ))
+        self.setConfigFieldValue(res.STR_CFG_COLORS_FREQ, self.GetString(res.EDIT_COLORS_FREQ))
+        self.setConfigFieldValue(res.STR_CFG_SCALE_X, self.GetString(res.EDIT_SCALE_X))
+        self.setConfigFieldValue(res.STR_CFG_SCALE_Y, self.GetString(res.EDIT_SCALE_Y))
+        self.setConfigFieldValue(res.STR_CFG_SCALE_Z, self.GetString(res.EDIT_SCALE_Z))
+        self.setConfigFieldValue(res.STR_CFG_LAT, self.GetString(res.EDIT_LAT))
+        self.setConfigFieldValue(res.STR_CFG_LON, self.GetString(res.EDIT_LON))
+        self.setConfigFieldValue(res.STR_CFG_PREFIX, self.GetString(res.EDIT_PREFIX))
+        self.setConfigFieldValue(res.STR_CFG_HEIGHT_OFFSET, self.GetString(res.EDIT_HEIGHT_OFFSET))
+        self.setConfigFieldValue(res.STR_CFG_OBJECT_COUNT, self.GetString(res.EDIT_OBJECT_COUNT))
+        self.setConfigFieldValue(res.STR_CFG_MAX_VELOCITY, self.GetString(res.EDIT_MAX_VELOCITY))
+        self.setConfigFieldValue(res.STR_CFG_MIN_DISTANCE, self.GetString(res.EDIT_MIN_DISTANCE))
+        self.setConfigFieldValue(res.STR_CFG_ROTATION, self.GetString(res.EDIT_ROTATION))
+        self.setConfigFieldValue(res.STR_CFG_TEMPLATE_PATH, self.GetString(res.EDIT_TEMPLATE_PATH))
+        self.setConfigFieldValue(res.STR_CFG_OUTPUT_FOLDER, self.GetString(res.EDIT_OUTPUT_FOLDER))
+        self.config.write(cfgfile)
         cfgfile.close()
 
     def loadConfigError(self, field, e):
-        return str(e)
         if e == 'NoOptionError':
             return 'No field \'{}\'\n'.format(field)
         elif e == 'TypeError' or e == 'ValueError':
@@ -216,36 +219,54 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         else:
             return '{}\n'.format(str(e))
 
+    def getConfigFieldValue(self, field):
+        if field == res.STR_CFG_START_COLOR:
+            return self.getColorId(self.config.get(res.STR_CFG_SECTION, field))
+        else:
+            return self.config.get(res.STR_CFG_SECTION, field)
+
+    def setGuiFieldsValues(self, fields):
+        result = ''
+        for field in fields:
+            try:
+                if field[1] == res.STR_CFG_START_COLOR:
+                    self.SetLong(field[0], self.getConfigFieldValue(field[1]))
+                else:
+                    self.SetString(field[0], self.getConfigFieldValue(field[1]))
+            except Exception as e:
+                result += self.loadConfigError(field[1], type(e).__name__)
+        return result
+
     # функция для загрузки настроек из конфигурационного файла
     def loadConfig(self, filename):
-        Config = ConfigParser.ConfigParser()
-        Config.read(filename)
+        fields = (
+            (res.EDIT_START_COLOR, res.STR_CFG_START_COLOR),
+            (res.EDIT_POINTS_FREQ, res.STR_CFG_POINTS_FREQ),
+            (res.EDIT_COLORS_FREQ, res.STR_CFG_COLORS_FREQ),
+            (res.EDIT_SCALE_X, res.STR_CFG_SCALE_X),
+            (res.EDIT_SCALE_Y, res.STR_CFG_SCALE_Y),
+            (res.EDIT_SCALE_Z, res.STR_CFG_SCALE_Z),
+            (res.EDIT_LAT, res.STR_CFG_LAT),
+            (res.EDIT_LON, res.STR_CFG_LON),
+            (res.EDIT_PREFIX, res.STR_CFG_PREFIX),
+            (res.EDIT_OUTPUT_FOLDER, res.STR_CFG_OUTPUT_FOLDER),
+            (res.EDIT_TEMPLATE_PATH, res.STR_CFG_TEMPLATE_PATH),
+            (res.EDIT_MAX_VELOCITY, res.STR_CFG_MAX_VELOCITY),
+            (res.EDIT_MIN_DISTANCE, res.STR_CFG_MIN_DISTANCE),
+            (res.EDIT_HEIGHT_OFFSET, res.STR_CFG_HEIGHT_OFFSET),
+            (res.EDIT_ROTATION, res.STR_CFG_ROTATION),
+            (res.EDIT_OBJECT_COUNT, res.STR_CFG_OBJECT_COUNT)
+        )
 
-        s = ''
-        
+        self.config = ConfigParser.ConfigParser()
         try:
-            self.SetLong(res.EDIT_START_COLOR, self.getColorId(Config.get(res.STR_CFG_SECTION, res.STR_CFG_START_COLOR)))
-        except Exception as e:
-            s += self.loadConfigError(res.STR_CFG_START_COLOR, type(e).__name__)
-        self.SetString(res.EDIT_POINTS_FREQ, Config.get(res.STR_CFG_SECTION, res.STR_CFG_POINTS_FREQ))
-        self.SetString(res.EDIT_COLORS_FREQ, Config.get(res.STR_CFG_SECTION, res.STR_CFG_COLORS_FREQ))
-        self.SetString(res.EDIT_SCALE_X, Config.get(res.STR_CFG_SECTION, res.STR_CFG_SCALE_X))
-        self.SetString(res.EDIT_SCALE_Y, Config.get(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Y))
-        self.SetString(res.EDIT_SCALE_Z, Config.get(res.STR_CFG_SECTION, res.STR_CFG_SCALE_Z))
-        self.SetString(res.EDIT_LAT, Config.get(res.STR_CFG_SECTION, res.STR_CFG_LAT))
-        self.SetString(res.EDIT_LON, Config.get(res.STR_CFG_SECTION, res.STR_CFG_LON))
-        self.SetString(res.EDIT_PREFIX, Config.get(res.STR_CFG_SECTION, res.STR_CFG_PREFIX))
-        self.SetString(res.EDIT_OUTPUT_FOLDER, Config.get(res.STR_CFG_SECTION, res.STR_CFG_OUTPUT_FOLDER))
-        self.SetString(res.EDIT_TEMPLATE_PATH, Config.get(res.STR_CFG_SECTION, res.STR_CFG_TEMPLATE_PATH))
-        self.SetString(res.EDIT_MAX_VELOCITY, Config.get(res.STR_CFG_SECTION, res.STR_CFG_MAX_VELOCITY))
-        self.SetString(res.EDIT_MIN_DISTANCE, Config.get(res.STR_CFG_SECTION, res.STR_CFG_MIN_DISTANCE))
-        self.SetString(res.EDIT_HEIGHT_OFFSET, Config.get(res.STR_CFG_SECTION, res.STR_CFG_HEIGHT_OFFSET))
-        self.SetString(res.EDIT_ROTATION, Config.get(res.STR_CFG_SECTION, res.STR_CFG_ROTATION))
-        self.SetString(res.EDIT_OBJECT_COUNT, Config.get(res.STR_CFG_SECTION, res.STR_CFG_OBJECT_COUNT))
-
-        if s is not '':
-            s = 'In {}:\n'.format(filename) + s
-            RaiseErrorMessage(s)
+            self.config.read(filename)
+        except ConfigParser.MissingSectionHeaderError:
+            RaiseErrorMessage('\'{}\' is not config file'.format(filename))
+            return
+        result = self.setGuiFieldsValues(fields)
+        if result is not '':
+            RaiseErrorMessage('In {}:\n{}'.format(filename, result))
 
     # по сути, загрузка конфигурации по-умолчанию заполняет интерфейс необходимыми значениями     
     def loadConfigDefault(self):
@@ -996,7 +1017,7 @@ class c4d_capture(c4d.plugins.CommandData):
 
                 counter = 0
                 for k in range(0, points_count, int(freq_ratio)):
-                    f.write(struct.pack('<fff', *[pos/100 for pos in data[i][k][1:4]]))
+                    f.write(struct.pack('<fff', *[pos/100 for pos in data[i][k][1:4]])) # /100 - convert cm to m 
                     counter += 1
 
                 if counter < 1800:
