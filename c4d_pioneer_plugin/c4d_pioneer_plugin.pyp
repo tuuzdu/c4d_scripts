@@ -215,7 +215,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
         if e == 'NoOptionError':
             return 'No field \'{}\'\n'.format(field)
         elif e == 'TypeError' or e == 'ValueError':
-            return 'Field \'{}\' has invalid value\n'.format(field)
+            return 'Invalid value of field \'{}\'\n'.format(field)
         else:
             return '{}\n'.format(str(e))
 
@@ -266,7 +266,7 @@ class PioneerCaptureDialog(c4d.gui.GeDialog):
             return
         result = self.setGuiFieldsValues(fields)
         if result is not '':
-            RaiseErrorMessage('In {}:\n{}'.format(filename, result))
+            RaiseErrorMessage('In \'{}\':\n{}'.format(filename, result))
 
     # по сути, загрузка конфигурации по-умолчанию заполняет интерфейс необходимыми значениями     
     def loadConfigDefault(self):
