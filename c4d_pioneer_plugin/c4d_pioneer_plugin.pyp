@@ -835,7 +835,7 @@ class c4d_capture(c4d.plugins.CommandData):
         return data
 
     def checkVelocity(self, time, time_end):
-        for i in range(1, self.object_count):
+        for i in range(self.object_count):
             if int(self.positionsArray[i].y) > 0: # Check only if the drone took off
                 distance = math.sqrt((self.positionsArray[i].x - self.positionsArrayPrev[i].x) ** 2 + (self.positionsArray[i].y - self.positionsArrayPrev[i].y) ** 2 + (self.positionsArray[i].z - self.positionsArrayPrev[i].z) ** 2) / 100 # /100 - convert cm to m
                 velocity = distance / self.time_step
