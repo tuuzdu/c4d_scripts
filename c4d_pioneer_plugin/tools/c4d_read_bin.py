@@ -42,7 +42,7 @@ def read_bin_file(file_name):
 
             for i in range(len(header)):
                 if i == 1:
-                    print(header_format_desc[i][0], hsv_to_rgb(int(header[i] * 360 / 255)/100, 1, 1)) # convert from int format to hue and then to rgb
+                    print(header_format_desc[i][0], hsv_to_rgb(int(header[i] * 360 / 255)/360, 1, 1)) # convert from int format to hue and then to rgb
                 else:
                     print(header_format_desc[i][0], header[i])
             
