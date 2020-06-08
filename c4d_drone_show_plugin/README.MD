@@ -16,4 +16,4 @@
 | LonOrigin       | deg        | float                     | 22         | 4        |
 | AltOrigin       | m          | float                     | 26         | 4        |
 | Positions       | m, m, m    | float, float, float       | 100        | 12       |
-| Colors          | r, g, b    | uint8_t, uint8_t, uint8_t | 21700      | 3        |
+| Colors          | r, g, b    | uint8_t, uint8_t, uint8_t | 100 + NumberPositions * FormatPositions * 3       | 3        |
